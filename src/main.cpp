@@ -98,7 +98,20 @@ public:
         pge.DrawRect(get_pos(), get_size());
     
         for (int i = 0; i < ws.get_visible_wave_count(); i++){
-            pge.DrawString(get_pos() + olc::vi2d(0, 2+ws.get_v_offset(i)), ws.get_visible_wave_name(i));
+            std::string name = ws.get_visible_wave_name(i);
+            olc::vi2d size = pge.GetTextSize(name);
+            bool cut = false;
+            if (get_size().x == 0){
+                return;
+            }
+            if (size.x > get_size().x){
+                int len = std::floor(name.size()*get_size().x/size.x) - 1;
+                std::cout << name.size() << " " << len << std::endl;
+                name = name.substr(0, len) + ">";
+                cut = true;
+            }
+
+            pge.DrawString(get_pos() + olc::vi2d(0, 2+ws.get_v_offset(i)), name);
         }
     }
 
@@ -204,6 +217,7 @@ class WaveGUI : public olc::PixelGameEngine
 {
 public:
     WaveWindow wave_window;
+    bool firstframe = true;
     WaveGUI()
     {
         sAppName = "WaveGUI";
@@ -218,11 +232,12 @@ public:
 
     bool OnUserUpdate(float fElapsedTime) override
     {
-        if (wave_window.has_changed()){
-            Clear(olc::BLACK);
-        }
         wave_window.update(*this);
-        wave_window.draw(*this);
+        if (firstframe || wave_window.has_changed()){
+            Clear(olc::BLACK);
+            wave_window.draw(*this);
+            firstframe = false;
+        }
         return !GetKey(olc::Q).bPressed;
     }
 };
