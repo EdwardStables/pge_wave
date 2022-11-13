@@ -395,6 +395,16 @@ public:
         if (!state.picker_show) return;
         pge.FillRect(pos, size, olc::BLACK);
         pge.DrawRect(pos, size, olc::WHITE);
+
+        olc::vi2d drawpos = pos + olc::vi2d(3,3);
+        std::string selector = " > ";
+        olc::vi2d selector_offs = {pge.GetTextSize(selector).x, 0};
+        for (int i = 0; i < ws.get_raw_wave_count(); i++){
+            if (i == state.picker_index) 
+                pge.DrawString(drawpos, selector);
+            pge.DrawString(drawpos + selector_offs, ws.get_raw_wave(i)->name);
+            drawpos += {0, pge.GetTextSize(ws.get_raw_wave(i)->name).y};
+        }
     }
 };
 
