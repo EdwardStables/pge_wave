@@ -1,4 +1,5 @@
 #include "olcPixelGameEngine.h"
+#include <array>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -9,7 +10,7 @@ struct State {
     float name_width = 0.1f;
     int start_time = 0;
     int timeline_width = 10;
-    int time_per_px = 1; //1ns
+    float time_per_px = 1.0f; //1ns
 
     bool update(olc::PixelGameEngine &pge){
         set_checkpoint();        
@@ -25,8 +26,8 @@ struct State {
         if (input(olc::RIGHT)) start_time = start_time + 50;
         if (input(olc::N)) name_width = std::max(0.0f, name_width - 0.05f);
         if (input(olc::M)) name_width = std::min(1.0f, name_width + 0.05f);
-        if (input(olc::Z) && input(olc::SHIFT, true)) time_per_px = std::min(2048, time_per_px << 1); //zoom out
-        if (input(olc::Z) && !input(olc::SHIFT, true)) time_per_px = std::max(1, time_per_px >> 1); //zoom in
+        if (input(olc::Z) && input(olc::SHIFT, true)) time_per_px = std::min(2048.0f, time_per_px * 2); //zoom out
+        if (input(olc::Z) && !input(olc::SHIFT, true)) time_per_px = std::max(0.125f, time_per_px / 2); //zoom in
     
         return get_checkpoint();
     }
@@ -60,6 +61,7 @@ private :
     }
 };
 
+//Test function
 std::vector<uint32_t> random_wave(int len){
     std::vector<uint32_t> data;
 
@@ -72,64 +74,106 @@ std::vector<uint32_t> random_wave(int len){
     return data;
 }
 
-
 class Wave {
 public:
     std::string name;
-    std::vector<uint32_t> data;
+    std::vector<std::vector<uint32_t>> data;
     int *height;
-    int *width;
+    int width;
 
-    Wave(int *height, int *width) :
-        height(height),
-        width(width)
+    Wave(int *height) :
+        height(height)
     {
-        data = random_wave(10);
         std::stringstream ss;
         ss << "wave_" << rand();
+        width = rand() % 7;
+        if (width == 0) width = 1;
+        for (int i = 0; i < width; i++){
+            data.push_back(random_wave(10));
+        }
+
+        if (width > 1) ss << " [" << width-1 << ":0]";
+
         name = ss.str();
     }
 
-    void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, uint32_t time_per_px, olc::PixelGameEngine &pge){
-        bool drawing = false;
-        uint8_t val = 0; //for now assuming all data starts at 0
-        int screen_x = pos.x;
-        int last_d = 0;
-        for (auto &d : data) {
-            if (!drawing){
-                if (d < start_time){
-                    val = val == 0 ? 1 : 0; //make sure data still toggles
-                    last_d = d;
-                    continue;
-                }
-                else {
-                    drawing = true;
+    
+    void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge){
+        auto get_next_time = [this](int time) {
+            int min_time = -1;
+            for (auto d : this->data){
+                for (auto t : d){
+                    if (t <= time) continue;
+                    if (t < min_time || min_time == -1) min_time = t; 
+                    break;
                 }
             }
+            return min_time;
+        };
 
+        auto data_at_time = [this](int time) {
+            uint32_t result = 0;
+            for (int i = 0; i < this->width; i++){
+                uint32_t d1b = 0;
+                for (auto &d : data[i]){
+                    if(d < time) d1b = !d1b;
+                    else break;
+                }
+                result += d1b << i;
+            }
+            return result;
+        };
+
+        draw_template(pos, pge, get_next_time, data_at_time, start_time, end_time, time_per_px, width != 1);
+    }
+
+    void draw_template(olc::vi2d pos,
+                       olc::PixelGameEngine &pge,
+                       std::function<int(int)> get_next_time,
+                       std::function<int(int)> data_at_time,
+                       uint32_t start_time,
+                       uint32_t end_time,
+                       float time_per_px,
+                       bool bus = false
+    ){
+        bool drawing = false;
+        int screen_x = pos.x;
+        int last_d = 0;
+        
+        uint32_t d = start_time;
+
+        while (d != -1){
+            int val = data_at_time(d);
             int new_screen_x;
             bool should_stop = false;
 
             if (d > end_time){
-                new_screen_x = screen_x+(end_time-last_d)/time_per_px;
+                new_screen_x = screen_x+float(end_time-last_d)/time_per_px;
                 should_stop = true;
             } else {
                 if (last_d < start_time){
-                    new_screen_x = screen_x+(d-start_time)/time_per_px;
+                    new_screen_x = screen_x+float(d-start_time)/time_per_px;
                 } else {
-                    new_screen_x = screen_x+(d-last_d)/time_per_px;
+                    new_screen_x = screen_x+float(d-last_d)/time_per_px;
                 }
             }
 
-            pge.DrawLine({screen_x, pos.y + *height - val * *height}, {new_screen_x, pos.y + *height - val * *height}, olc::GREEN);
-
-            if (should_stop) break; 
-
-            pge.DrawLine({new_screen_x, pos.y}, {new_screen_x, pos.y+*height}, olc::GREEN);
-
-            val = val == 0 ? 1 : 0;
+            //todo can abstract this to lambdas probably
+            if (bus){
+                pge.DrawRect({screen_x, pos.y}, {new_screen_x-screen_x, *height}, olc::GREEN);
+                std::stringstream ss;
+                //todo for radix, this needs to change
+                ss << width << "'h" << std::setw(width) << std::hex << val;
+                pge.DrawString({screen_x + 2, pos.y + 1}, ss.str());
+                if (should_stop) break; 
+            } else {
+                pge.DrawLine({screen_x, pos.y + *height - val * *height}, {new_screen_x, pos.y + *height - val * *height}, olc::GREEN);
+                if (should_stop) break; 
+                pge.DrawLine({new_screen_x, pos.y}, {new_screen_x, pos.y+*height}, olc::GREEN);
+            }
             screen_x = new_screen_x;
             last_d = d;
+            d = get_next_time(d);
         }
     }
 };
@@ -138,11 +182,10 @@ class WaveStore {
     std::vector<Wave*> waves;
     int wave_height = 10;
     int v_gap = 5;
-    int wave_width = 10;
 public:
     WaveStore() {
-        for (int i = 0; i < 10; i++)
-            waves.push_back(new Wave(&wave_height, &wave_width));
+        for (int i = 0; i < 1; i++)
+            waves.push_back(new Wave(&wave_height));
     }
 
     int get_visible_wave_count(){
@@ -236,12 +279,12 @@ public:
         pge.FillRect(get_pos(), {get_size().x, state.timeline_width});
         int interval = 100; //what time interval to draw markers
 
-        int time = state.start_time;
+        float time = state.start_time;
         for (int i = 0; i < get_size().x; i++){
-            if ((time - state.start_time) % interval == 0){
+            if ((int(time) - state.start_time) % interval == 0){
                 pge.FillRect(olc::vi2d(i, 4) + get_pos(), {2, state.timeline_width-4}, olc::BLACK);
                 std::stringstream ss;
-                ss << time;
+                ss << int(time);
                 
                 if (i + 3 +  pge.GetTextSize(ss.str()).x <= get_size().x)
                     pge.DrawString(olc::vi2d(i+3, 2) + get_pos(), ss.str(), olc::BLACK);
