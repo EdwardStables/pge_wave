@@ -163,7 +163,7 @@ public:
                 pge.DrawRect({screen_x, pos.y}, {new_screen_x-screen_x, *height}, olc::GREEN);
                 std::stringstream ss;
                 //todo for radix, this needs to change
-                ss << width << "'h" << std::setw(width) << std::hex << val;
+                ss << width << "'h"  << std::hex << val;
                 pge.DrawString({screen_x + 2, pos.y + 1}, ss.str());
                 if (should_stop) break; 
             } else {
@@ -280,14 +280,17 @@ public:
         int interval = 100; //what time interval to draw markers
 
         float time = state.start_time;
+        int last_time = -1;
         for (int i = 0; i < get_size().x; i++){
-            if ((int(time) - state.start_time) % interval == 0){
+            if ((int(time) - state.start_time) % interval == 0 && int(time) != last_time){
                 pge.FillRect(olc::vi2d(i, 4) + get_pos(), {2, state.timeline_width-4}, olc::BLACK);
                 std::stringstream ss;
                 ss << int(time);
                 
-                if (i + 3 +  pge.GetTextSize(ss.str()).x <= get_size().x)
+                if (i + 3 +  pge.GetTextSize(ss.str()).x <= get_size().x){
                     pge.DrawString(olc::vi2d(i+3, 2) + get_pos(), ss.str(), olc::BLACK);
+                }
+                last_time = int(time);
             }
             time += state.time_per_px;
         }
