@@ -6,45 +6,6 @@
 #include <time.h>
 #include <iostream>
 
-struct State {
-    bool got_input;
-
-    //-- General State --//
-    float name_width = 0.1f;
-    int start_time = 0;
-    int timeline_width = 10;
-    float time_per_px = 1.0f; //1ns
-    
-    //-- Picker specific variables --//
-    bool picker_show = false;
-    int picker_border = 50; //50px
-
-    bool update(olc::PixelGameEngine &pge){
-        auto input = [&] (olc::Key key, bool held=false){
-            bool res = false;
-            if (held)
-                res = pge.GetKey(key).bHeld;
-            else
-                res = pge.GetKey(key).bPressed;
-            this->got_input |= res;
-            return res;
-        };
-
-        got_input = false;
-
-        if (input(olc::LEFT)) start_time = std::max(0, start_time - 50);
-        if (input(olc::RIGHT)) start_time = start_time + 50;
-        if (input(olc::N)) name_width = std::max(0.0f, name_width - 0.05f);
-        if (input(olc::M)) name_width = std::min(1.0f, name_width + 0.05f);
-        if (input(olc::Z) && input(olc::SHIFT, true)) time_per_px = std::min(2048.0f, time_per_px * 2); //zoom out
-        if (input(olc::Z) && !input(olc::SHIFT, true)) time_per_px = std::max(0.125f, time_per_px / 2); //zoom in
-
-        if (input(olc::SPACE)) picker_show = !picker_show;
-        
-        return !got_input;
-    }
-};
-
 //Test function
 std::vector<uint32_t> random_wave(int len){
     std::vector<uint32_t> data;
@@ -234,6 +195,72 @@ public:
     }
 };
 
+struct State {
+    bool got_input;
+    WaveStore &ws;
+
+    //-- General State --//
+    float name_width = 0.1f;
+    int start_time = 0;
+    int timeline_width = 10;
+    float time_per_px = 1.0f; //1ns
+    
+    //-- Picker specific variables --//
+    bool picker_show = false;
+    int picker_border = 50; //50px
+    int picker_index = 0;
+
+    olc::PixelGameEngine &pge;
+
+    State(olc::PixelGameEngine &pge, WaveStore &ws) : 
+        pge(pge), 
+        ws(ws)
+    {}
+
+    bool update(){
+        got_input = false;
+
+        common_inputs();
+        wave_inputs();
+        picker_inputs();
+
+        return !got_input;
+    }
+private:
+    void common_inputs(){
+        if (input(olc::SPACE)) picker_show = !picker_show;
+    }
+
+    void wave_inputs(){
+        if (picker_show) return;        
+
+        if (input(olc::LEFT)) start_time = std::max(0, start_time - 50);
+        if (input(olc::RIGHT)) start_time = start_time + 50;
+        if (input(olc::N)) name_width = std::max(0.0f, name_width - 0.05f);
+        if (input(olc::M)) name_width = std::min(1.0f, name_width + 0.05f);
+        if (input(olc::Z) && input(olc::SHIFT, true)) time_per_px = std::min(2048.0f, time_per_px * 2); //zoom out
+        if (input(olc::Z) && !input(olc::SHIFT, true)) time_per_px = std::max(0.125f, time_per_px / 2); //zoom in
+    }
+
+    void picker_inputs(){
+        if (!picker_show){
+
+        if (input(olc::UP)) picker_index = std::max(0, picker_index-1);
+        if (input(olc::DOWN)) picker_index = std::min(0, picker_index+1);
+        }
+    }
+
+
+    bool input(olc::Key key, bool held=false){
+        bool res = false;
+        if (held)
+            res = pge.GetKey(key).bHeld;
+        else
+            res = pge.GetKey(key).bPressed;
+        this->got_input |= res;
+        return res;
+    };
+};
 class NamePane {
 public:
     olc::vi2d window_pos;
@@ -363,11 +390,7 @@ public:
         ws(ws),
         pos(rootpos + state.picker_border*olc::vi2d(1,1)),
         size(rootsize - 2*state.picker_border*olc::vi2d(1,1))
-    {
-        std::cout << state.picker_border << std::endl;
-        std::cout << pos << std::endl;
-        std::cout << size << std::endl;
-    }
+    {}
 
     void draw(olc::PixelGameEngine &pge){
         if (!state.picker_show) return;
@@ -389,8 +412,11 @@ public:
 
     WaveStore ws;
     bool changed = false;
+    olc::PixelGameEngine &pge;
     
-    WaveWindow() : 
+    WaveWindow(olc::PixelGameEngine &pge) : 
+        pge(pge),
+        state(pge, ws),
         name_pane(NamePane(pos, size, &state.name_width, ws, state)),
         wave_pane(WavePane(pos, size, &state.name_width, ws, state)),
         wave_picker(WavePicker(pos, size, state, ws)) 
@@ -398,11 +424,11 @@ public:
 
     }
 
-    void update(olc::PixelGameEngine &pge){
-        changed = !state.update(pge);
+    void update(){
+        changed = !state.update();
     }
 
-    void draw(olc::PixelGameEngine &pge){
+    void draw(){
         name_pane.draw(pge);
         wave_pane.draw(pge);
         wave_picker.draw(pge);
@@ -422,7 +448,7 @@ class WaveGUI : public olc::PixelGameEngine
 public:
     WaveWindow wave_window;
     bool firstframe = true;
-    WaveGUI()
+    WaveGUI() : wave_window(*this)
     {
         sAppName = "WaveGUI";
     }
@@ -436,10 +462,10 @@ public:
 
     bool OnUserUpdate(float fElapsedTime) override
     {
-        wave_window.update(*this);
+        wave_window.update();
         if (firstframe || wave_window.has_changed()){
             Clear(olc::BLACK);
-            wave_window.draw(*this);
+            wave_window.draw();
             firstframe = false;
         }
         return !GetKey(olc::Q).bPressed;
