@@ -159,11 +159,6 @@ public:
         for (int i = 0; i < 10; i++){
             waves.push_back(new Wave(&wave_height));
         }
-
-        create_instance(0);
-        create_instance(1);
-        create_instance(1);
-        create_instance(2);
     }
 
     void create_instance(int num){
@@ -247,6 +242,7 @@ private:
 
         if (input(olc::UP)) picker_index = std::max(0, picker_index-1);
         if (input(olc::DOWN)) picker_index = std::min(ws.get_raw_wave_count()-1, picker_index+1);
+        if (input(olc::ENTER)) ws.create_instance(picker_index);
     }
 
 
