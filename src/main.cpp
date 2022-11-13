@@ -9,28 +9,54 @@ struct State {
     float name_width = 0.1f;
     int start_time = 0;
     uint32_t timeline_width = 10;
+    int x_px_scale = 1; //1ns
 
     bool update(olc::PixelGameEngine &pge){
-        uint32_t state_checkpoint = get_checkpoint();
-        auto input = [&] (olc::Key key){
-            return pge.GetKey(key).bPressed;
+        set_checkpoint();        
+
+        auto input = [&] (olc::Key key, bool held=false){
+            if (held)
+                return pge.GetKey(key).bHeld;
+            else
+                return pge.GetKey(key).bPressed;
         };
 
         if (input(olc::LEFT)) start_time = std::max(0, start_time - 50);
         if (input(olc::RIGHT)) start_time = start_time + 50;
         if (input(olc::N)) name_width = std::max(0.0f, name_width - 0.05f);
         if (input(olc::M)) name_width = std::min(1.0f, name_width + 0.05f);
+        if (input(olc::Z) && !input(olc::SHIFT, true)) x_px_scale = std::min(2048, x_px_scale << 1);
+        if (input(olc::Z) && input(olc::SHIFT, true)) x_px_scale = std::max(1, x_px_scale >> 1);
     
-        if (state_checkpoint != get_checkpoint()){
-            return true;
-        }
-
-        return false;
+        return get_checkpoint();
     }
+
 private :
-    uint32_t get_checkpoint(){
-        //TODO for more entries, do something fancier 
-        return 100 * name_width + start_time;
+    bool checkpoint_valid = false;    
+
+    float s_name_width;
+    int s_start_time;
+    uint32_t s_timeline_width;
+    int s_x_px_scale; //1ns
+
+    void set_checkpoint(){
+        s_name_width        = name_width;
+        s_start_time        = start_time;
+        s_timeline_width    = timeline_width;
+        s_x_px_scale        = x_px_scale; //1ns
+        checkpoint_valid = true;
+    }
+
+    bool get_checkpoint(){
+        if (!checkpoint_valid) return false;
+
+        bool same = true;
+        same &= s_name_width == name_width;
+        same &= s_start_time == start_time;
+        same &= s_timeline_width == timeline_width;
+        same &= s_x_px_scale == x_px_scale;
+        checkpoint_valid = false;
+        return same;
     }
 };
 
@@ -192,8 +218,6 @@ public:
     float *proportion;
     WaveStore &ws;
 
-    uint32_t x_px_scale = 1; //1ns
-
 
     State &state;
 
@@ -219,7 +243,7 @@ public:
                 if (i + 3 +  pge.GetTextSize(ss.str()).x <= get_size().x)
                     pge.DrawString(olc::vi2d(i+3, 2) + get_pos(), ss.str(), olc::BLACK);
             }
-            time += x_px_scale;
+            time += state.x_px_scale;
         }
     }
 
@@ -228,7 +252,7 @@ public:
         draw_timeline(pge);
 
 
-        uint32_t end_time = x_px_scale * get_size().x + state.start_time;
+        uint32_t end_time = state.x_px_scale * get_size().x + state.start_time;
         for (auto &d : ws.get_visible_wave(0)->data)
             std::cout << d << ", ";
         std::cout << std::endl;
@@ -237,7 +261,7 @@ public:
             ws.get_visible_wave(i)->draw(
                 get_pos() + olc::vi2d(0, ws.get_v_offset(i) + state.timeline_width + 2),
                 state.start_time, end_time, 
-                x_px_scale, pge
+                state.x_px_scale, pge
             );
         }
     }
