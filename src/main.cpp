@@ -8,7 +8,7 @@
 struct State {
     float name_width = 0.1f;
     int start_time = 0;
-    uint32_t timeline_width = 10;
+    int timeline_width = 10;
     int time_per_px = 1; //1ns
 
     bool update(olc::PixelGameEngine &pge){
@@ -93,8 +93,8 @@ public:
     void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, uint32_t time_per_px, olc::PixelGameEngine &pge){
         bool drawing = false;
         uint8_t val = 0; //for now assuming all data starts at 0
-        uint32_t screen_x = pos.x;
-        uint32_t last_d = 0;
+        int screen_x = pos.x;
+        int last_d = 0;
         for (auto &d : data) {
             if (!drawing){
                 if (d < start_time){
@@ -107,7 +107,7 @@ public:
                 }
             }
 
-            uint32_t new_screen_x;
+            int new_screen_x;
             bool should_stop = false;
 
             if (d > end_time){
