@@ -17,6 +17,7 @@ struct State {
     
     //-- Picker specific variables --//
     bool picker_show = false;
+    int picker_border = 50; //50px
 
     bool update(olc::PixelGameEngine &pge){
         auto input = [&] (olc::Key key, bool held=false){
@@ -350,24 +351,28 @@ public:
 };
 
 class WavePicker {
+    olc::vi2d pos;    
+    olc::vi2d size;    
+
     State &state;
     WaveStore &ws;
 
-    olc::vi2d pos;
-    olc::vi2d size;
-
 public:
-    WavePicker(olc::vi2d pos, olc::vi2d size, State &state, WaveStore &ws) :
-        pos(pos),
-        size(size),
+    WavePicker(olc::vi2d rootpos, olc::vi2d rootsize, State &state, WaveStore &ws) :
         state(state),
-        ws(ws)
+        ws(ws),
+        pos(rootpos + state.picker_border*olc::vi2d(1,1)),
+        size(rootsize - 2*state.picker_border*olc::vi2d(1,1))
     {
-
+        std::cout << state.picker_border << std::endl;
+        std::cout << pos << std::endl;
+        std::cout << size << std::endl;
     }
 
     void draw(olc::PixelGameEngine &pge){
         if (!state.picker_show) return;
+        pge.FillRect(pos, size, olc::BLACK);
+        pge.DrawRect(pos, size, olc::WHITE);
     }
 };
 
@@ -380,13 +385,15 @@ public:
 
     NamePane name_pane;
     WavePane wave_pane;
+    WavePicker wave_picker;
 
     WaveStore ws;
     bool changed = false;
     
     WaveWindow() : 
         name_pane(NamePane(pos, size, &state.name_width, ws, state)),
-        wave_pane(WavePane(pos, size, &state.name_width, ws, state)) 
+        wave_pane(WavePane(pos, size, &state.name_width, ws, state)),
+        wave_picker(WavePicker(pos, size, state, ws)) 
     {
 
     }
@@ -395,11 +402,10 @@ public:
         changed = !state.update(pge);
     }
 
-    int i = 0;
     void draw(olc::PixelGameEngine &pge){
-        i++;
         name_pane.draw(pge);
         wave_pane.draw(pge);
+        wave_picker.draw(pge);
     }
 
     bool has_changed(bool clear = true){
@@ -445,7 +451,7 @@ int main()
 {
     srand(time(NULL));
     WaveGUI game;
-    if(game.Construct(1920, 1080, 1, 1))
+    if(game.Construct(1501, 1001, 1, 1))
         game.Start();
 
     return 0;
