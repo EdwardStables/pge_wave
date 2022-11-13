@@ -9,7 +9,7 @@ std::vector<uint32_t> random_wave(int len){
     std::vector<uint32_t> data;
 
     for (int i = 0; i < len; i++){
-        data.push_back(rand()%700);
+        data.push_back(rand()%1500);
     }
 
     std::sort(data.begin(), data.end());
@@ -48,8 +48,22 @@ public:
                     drawing = true;
             }
 
-            uint32_t new_screen_x = screen_x+scale*(d-last_d);
+            uint32_t new_screen_x;
+            bool should_stop = false;
+
+            if (d > end_time){
+                new_screen_x = screen_x+scale*(end_time-last_d);
+                should_stop = true;
+            } else {
+                new_screen_x = screen_x+scale*(d-last_d);
+            }
+
             pge.DrawLine({screen_x, pos.y + *height - val * *height}, {new_screen_x, pos.y + *height - val * *height}, olc::GREEN);
+
+            if (should_stop) break; 
+
+            pge.DrawLine({new_screen_x, pos.y}, {new_screen_x, pos.y+*height}, olc::GREEN);
+
             val = val == 0 ? 1 : 0;
             screen_x = new_screen_x;
             last_d = d;
@@ -64,7 +78,7 @@ class WaveStore {
     int wave_width = 10;
 public:
     WaveStore() {
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 10; i++)
             waves.push_back(new Wave(&wave_height, &wave_width));
     }
 
@@ -113,7 +127,6 @@ public:
             }
             if (size.x > get_size().x){
                 int len = std::floor(name.size()*get_size().x/size.x) - 1;
-                std::cout << name.size() << " " << len << std::endl;
                 name = name.substr(0, len) + ">";
                 cut = true;
             }
@@ -157,10 +170,15 @@ public:
         pge.FillRect(get_pos(), {get_size().x, timeline_width});
         uint32_t time = start_time;
         for (int i = 0; i < get_size().x; i++){
-            time += x_px_scale;
             if (time % 100 == 0){
                 pge.FillRect(olc::vi2d(i, 4) + get_pos(), {2, timeline_width-4}, olc::BLACK);
+                std::stringstream ss;
+                ss << time;
+                
+                if (i + 3 +  pge.GetTextSize(ss.str()).x <= get_size().x)
+                    pge.DrawString(olc::vi2d(i+3, 2) + get_pos(), ss.str(), olc::BLACK);
             }
+            time += x_px_scale;
         }
     }
 
