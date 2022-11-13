@@ -3,13 +3,16 @@
 #include <string>
 #include <sstream>
 #include <time.h>
+#include <iostream>
 
-std::vector<uint8_t> random_wave(int len){
-    std::vector<uint8_t> data;
+std::vector<uint32_t> random_wave(int len){
+    std::vector<uint32_t> data;
 
     for (int i = 0; i < len; i++){
-        data.push_back(rand()&1);
+        data.push_back(rand()%700);
     }
+
+    std::sort(data.begin(), data.end());
 
     return data;
 }
@@ -18,7 +21,7 @@ std::vector<uint8_t> random_wave(int len){
 class Wave {
 public:
     std::string name;
-    std::vector<uint8_t> data;
+    std::vector<uint32_t> data;
     int *height;
     int *width;
 
@@ -26,26 +29,30 @@ public:
         height(height),
         width(width)
     {
-        data = random_wave(100);
+        data = random_wave(10);
         std::stringstream ss;
         ss << "wave_" << rand();
         name = ss.str();
     }
 
-    void draw(olc::vi2d pos, olc::PixelGameEngine &pge){
-        int x = pos.x;
-        int last = -1;
-        for (auto &d : data){
-            int y = pos.y + *height - (d**height);
-
-            if (last != -1 && d != last)
-            {
-                pge.DrawLine({x, pos.y + *height}, {x, pos.y}, olc::GREEN);
+    void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, uint32_t scale, olc::PixelGameEngine &pge){
+        bool drawing = false;
+        uint8_t val = 0; //for now assuming all data starts at 0
+        uint32_t screen_x = pos.x;
+        uint32_t last_d = 0;
+        for (auto &d : data) {
+            if (!drawing){
+                if (d < start_time)
+                    continue;
+                else
+                    drawing = true;
             }
 
-            pge.DrawLine({x,y}, {x+*width, y}, olc::GREEN);
-            x += *width;
-            last = d;
+            uint32_t new_screen_x = screen_x+scale*(d-last_d);
+            pge.DrawLine({screen_x, pos.y + *height - val * *height}, {new_screen_x, pos.y + *height - val * *height}, olc::GREEN);
+            val = val == 0 ? 1 : 0;
+            screen_x = new_screen_x;
+            last_d = d;
         }
     }
 };
@@ -57,7 +64,7 @@ class WaveStore {
     int wave_width = 10;
 public:
     WaveStore() {
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 1; i++)
             waves.push_back(new Wave(&wave_height, &wave_width));
     }
 
@@ -111,7 +118,8 @@ public:
                 cut = true;
             }
 
-            pge.DrawString(get_pos() + olc::vi2d(0, 2+ws.get_v_offset(i)), name);
+            //10+2 are magic numbers for the timeline width + offset in wave window
+            pge.DrawString(get_pos() + olc::vi2d(0, 2+ws.get_v_offset(i) + 10 + 2), name);
         }
     }
 
@@ -131,6 +139,11 @@ public:
     float *proportion;
     WaveStore &ws;
 
+    uint32_t x_px_scale = 1; //1ns
+    uint32_t start_time = 0; //start at time zero
+
+    int timeline_width = 10;
+
     WavePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &ws) :
         window_pos(pos),
         window_size(size),
@@ -140,11 +153,29 @@ public:
 
     }
 
+    void draw_timeline(olc::PixelGameEngine &pge){
+        pge.FillRect(get_pos(), {get_size().x, timeline_width});
+        uint32_t time = start_time;
+        for (int i = 0; i < get_size().x; i++){
+            time += x_px_scale;
+            if (time % 100 == 0){
+                pge.FillRect(olc::vi2d(i, 4) + get_pos(), {2, timeline_width-4}, olc::BLACK);
+            }
+        }
+    }
+
     void draw(olc::PixelGameEngine &pge){
         pge.DrawRect(get_pos(), get_size());
+        draw_timeline(pge);
+
+
+        uint32_t end_time = x_px_scale * get_size().x + start_time;
+        for (auto &d : ws.get_visible_wave(0)->data)
+            std::cout << d << ", ";
+        std::cout << std::endl;
 
         for (int i = 0; i < ws.get_visible_wave_count(); i++){
-            ws.get_visible_wave(i)->draw(get_pos() + olc::vi2d(0, ws.get_v_offset(i)), pge);
+            ws.get_visible_wave(i)->draw(get_pos() + olc::vi2d(0, ws.get_v_offset(i) + timeline_width + 2), start_time, end_time, x_px_scale, pge);
         }
     }
 
