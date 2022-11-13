@@ -38,7 +38,7 @@ private :
     float s_name_width;
     int s_start_time;
     uint32_t s_timeline_width;
-    int s_time_per_px; //1ns
+    float s_time_per_px; //1ns
 
     void set_checkpoint(){
         s_name_width        = name_width;
