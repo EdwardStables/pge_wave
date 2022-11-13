@@ -243,11 +243,10 @@ private:
     }
 
     void picker_inputs(){
-        if (!picker_show){
+        if (!picker_show) return;
 
         if (input(olc::UP)) picker_index = std::max(0, picker_index-1);
-        if (input(olc::DOWN)) picker_index = std::min(0, picker_index+1);
-        }
+        if (input(olc::DOWN)) picker_index = std::min(ws.get_raw_wave_count()-1, picker_index+1);
     }
 
 
@@ -411,8 +410,8 @@ public:
     WavePicker wave_picker;
 
     WaveStore ws;
-    bool changed = false;
     olc::PixelGameEngine &pge;
+    bool firstframe = true;
     
     WaveWindow(olc::PixelGameEngine &pge) : 
         pge(pge),
@@ -424,21 +423,13 @@ public:
 
     }
 
-    void update(){
-        changed = !state.update();
-    }
-
     void draw(){
+        if (!firstframe && state.update()) return;
+        pge.Clear(olc::BLACK);
         name_pane.draw(pge);
         wave_pane.draw(pge);
         wave_picker.draw(pge);
-    }
-
-    bool has_changed(bool clear = true){
-        bool v = changed;
-        if (clear)
-            changed = false;
-        return v;
+        firstframe=false;
     }
 };
 
@@ -447,7 +438,6 @@ class WaveGUI : public olc::PixelGameEngine
 {
 public:
     WaveWindow wave_window;
-    bool firstframe = true;
     WaveGUI() : wave_window(*this)
     {
         sAppName = "WaveGUI";
@@ -462,12 +452,7 @@ public:
 
     bool OnUserUpdate(float fElapsedTime) override
     {
-        wave_window.update();
-        if (firstframe || wave_window.has_changed()){
-            Clear(olc::BLACK);
-            wave_window.draw();
-            firstframe = false;
-        }
+        wave_window.draw();
         return !GetKey(olc::Q).bPressed;
     }
 };
