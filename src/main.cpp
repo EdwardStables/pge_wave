@@ -7,20 +7,29 @@
 #include <iostream>
 
 struct State {
+    bool got_input;
+
+    //-- General State --//
     float name_width = 0.1f;
     int start_time = 0;
     int timeline_width = 10;
     float time_per_px = 1.0f; //1ns
+    
+    //-- Picker specific variables --//
+    bool picker_show = false;
 
     bool update(olc::PixelGameEngine &pge){
-        set_checkpoint();        
-
         auto input = [&] (olc::Key key, bool held=false){
+            bool res = false;
             if (held)
-                return pge.GetKey(key).bHeld;
+                res = pge.GetKey(key).bHeld;
             else
-                return pge.GetKey(key).bPressed;
+                res = pge.GetKey(key).bPressed;
+            this->got_input |= res;
+            return res;
         };
+
+        got_input = false;
 
         if (input(olc::LEFT)) start_time = std::max(0, start_time - 50);
         if (input(olc::RIGHT)) start_time = start_time + 50;
@@ -28,36 +37,10 @@ struct State {
         if (input(olc::M)) name_width = std::min(1.0f, name_width + 0.05f);
         if (input(olc::Z) && input(olc::SHIFT, true)) time_per_px = std::min(2048.0f, time_per_px * 2); //zoom out
         if (input(olc::Z) && !input(olc::SHIFT, true)) time_per_px = std::max(0.125f, time_per_px / 2); //zoom in
-    
-        return get_checkpoint();
-    }
 
-private :
-    bool checkpoint_valid = false;    
-
-    float s_name_width;
-    int s_start_time;
-    uint32_t s_timeline_width;
-    float s_time_per_px; //1ns
-
-    void set_checkpoint(){
-        s_name_width        = name_width;
-        s_start_time        = start_time;
-        s_timeline_width    = timeline_width;
-        s_time_per_px       = time_per_px; //1ns
-        checkpoint_valid = true;
-    }
-
-    bool get_checkpoint(){
-        if (!checkpoint_valid) return false;
-
-        bool same = true;
-        same &= s_name_width == name_width;
-        same &= s_start_time == start_time;
-        same &= s_timeline_width == timeline_width;
-        same &= s_time_per_px == time_per_px;
-        checkpoint_valid = false;
-        return same;
+        if (input(olc::SPACE)) picker_show = !picker_show;
+        
+        return !got_input;
     }
 };
 
@@ -363,6 +346,28 @@ public:
 
     olc::vi2d get_size(){
         return window_size - olc::vi2d(window_size.x* *proportion, 0);
+    }
+};
+
+class WavePicker {
+    State &state;
+    WaveStore &ws;
+
+    olc::vi2d pos;
+    olc::vi2d size;
+
+public:
+    WavePicker(olc::vi2d pos, olc::vi2d size, State &state, WaveStore &ws) :
+        pos(pos),
+        size(size),
+        state(state),
+        ws(ws)
+    {
+
+    }
+
+    void draw(olc::PixelGameEngine &pge){
+        if (!state.picker_show) return;
     }
 };
 
