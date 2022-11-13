@@ -164,7 +164,10 @@ public:
                 std::stringstream ss;
                 //todo for radix, this needs to change
                 ss << width << "'h"  << std::hex << val;
-                pge.DrawString({screen_x + 2, pos.y + 1}, ss.str());
+                int width = pge.GetTextSize(ss.str()).x;
+                if (width < new_screen_x - screen_x){
+                    pge.DrawString({screen_x + 2, pos.y + 1}, ss.str());
+                }
                 if (should_stop) break; 
             } else {
                 pge.DrawLine({screen_x, pos.y + *height - val * *height}, {new_screen_x, pos.y + *height - val * *height}, olc::GREEN);
@@ -184,7 +187,7 @@ class WaveStore {
     int v_gap = 5;
 public:
     WaveStore() {
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 10; i++)
             waves.push_back(new Wave(&wave_height));
     }
 
