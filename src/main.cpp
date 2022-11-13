@@ -5,6 +5,35 @@
 #include <time.h>
 #include <iostream>
 
+struct State {
+    float name_width = 0.1f;
+    int start_time = 0;
+    uint32_t timeline_width = 10;
+
+    bool update(olc::PixelGameEngine &pge){
+        uint32_t state_checkpoint = get_checkpoint();
+        auto input = [&] (olc::Key key){
+            return pge.GetKey(key).bPressed;
+        };
+
+        if (input(olc::LEFT)) start_time = std::max(0, start_time - 50);
+        if (input(olc::RIGHT)) start_time = start_time + 50;
+        if (input(olc::N)) name_width = std::max(0.0f, name_width - 0.05f);
+        if (input(olc::M)) name_width = std::min(1.0f, name_width + 0.05f);
+    
+        if (state_checkpoint != get_checkpoint()){
+            return true;
+        }
+
+        return false;
+    }
+private :
+    uint32_t get_checkpoint(){
+        //TODO for more entries, do something fancier 
+        return 100 * name_width + start_time;
+    }
+};
+
 std::vector<uint32_t> random_wave(int len){
     std::vector<uint32_t> data;
 
@@ -42,10 +71,14 @@ public:
         uint32_t last_d = 0;
         for (auto &d : data) {
             if (!drawing){
-                if (d < start_time)
+                if (d < start_time){
+                    val = val == 0 ? 1 : 0; //make sure data still toggles
+                    last_d = d;
                     continue;
-                else
+                }
+                else {
                     drawing = true;
+                }
             }
 
             uint32_t new_screen_x;
@@ -55,7 +88,11 @@ public:
                 new_screen_x = screen_x+scale*(end_time-last_d);
                 should_stop = true;
             } else {
-                new_screen_x = screen_x+scale*(d-last_d);
+                if (last_d < start_time){
+                    new_screen_x = screen_x+scale*(d-start_time);
+                } else {
+                    new_screen_x = screen_x+scale*(d-last_d);
+                }
             }
 
             pge.DrawLine({screen_x, pos.y + *height - val * *height}, {new_screen_x, pos.y + *height - val * *height}, olc::GREEN);
@@ -106,11 +143,14 @@ public:
     float *proportion;
     WaveStore &ws;
 
-    NamePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &ws) :
+    State &state;
+
+    NamePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &ws, State &state) :
         window_pos(pos),
         window_size(size),
         proportion(proportion),
-        ws(ws)
+        ws(ws),
+        state(state)
     {
 
     }
@@ -132,7 +172,7 @@ public:
             }
 
             //10+2 are magic numbers for the timeline width + offset in wave window
-            pge.DrawString(get_pos() + olc::vi2d(0, 2+ws.get_v_offset(i) + 10 + 2), name);
+            pge.DrawString(get_pos() + olc::vi2d(0, 2+ws.get_v_offset(i) + state.timeline_width + 2), name);
         }
     }
 
@@ -153,25 +193,26 @@ public:
     WaveStore &ws;
 
     uint32_t x_px_scale = 1; //1ns
-    uint32_t start_time = 0; //start at time zero
 
-    int timeline_width = 10;
 
-    WavePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &ws) :
+    State &state;
+
+    WavePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &ws, State &state) :
         window_pos(pos),
         window_size(size),
         proportion(proportion),
-        ws(ws)
+        ws(ws),
+        state(state)
     {
 
     }
 
     void draw_timeline(olc::PixelGameEngine &pge){
-        pge.FillRect(get_pos(), {get_size().x, timeline_width});
-        uint32_t time = start_time;
+        pge.FillRect(get_pos(), {get_size().x, state.timeline_width});
+        uint32_t time = state.start_time;
         for (int i = 0; i < get_size().x; i++){
             if (time % 100 == 0){
-                pge.FillRect(olc::vi2d(i, 4) + get_pos(), {2, timeline_width-4}, olc::BLACK);
+                pge.FillRect(olc::vi2d(i, 4) + get_pos(), {2, state.timeline_width-4}, olc::BLACK);
                 std::stringstream ss;
                 ss << time;
                 
@@ -187,13 +228,17 @@ public:
         draw_timeline(pge);
 
 
-        uint32_t end_time = x_px_scale * get_size().x + start_time;
+        uint32_t end_time = x_px_scale * get_size().x + state.start_time;
         for (auto &d : ws.get_visible_wave(0)->data)
             std::cout << d << ", ";
         std::cout << std::endl;
 
         for (int i = 0; i < ws.get_visible_wave_count(); i++){
-            ws.get_visible_wave(i)->draw(get_pos() + olc::vi2d(0, ws.get_v_offset(i) + timeline_width + 2), start_time, end_time, x_px_scale, pge);
+            ws.get_visible_wave(i)->draw(
+                get_pos() + olc::vi2d(0, ws.get_v_offset(i) + state.timeline_width + 2),
+                state.start_time, end_time, 
+                x_px_scale, pge
+            );
         }
     }
 
@@ -208,14 +253,7 @@ public:
 
 class WaveWindow {
 public:
-    
-    struct State {
-        float name_width = 0.1f;
-        uint32_t get_checkpoint(){
-            //TODO for more entries, do something fancier 
-            return 100 * name_width;
-        }
-    } state;
+    State state; 
 
     olc::vi2d pos = {0,0};
     olc::vi2d size = {1500, 1000};
@@ -227,25 +265,14 @@ public:
     bool changed = false;
     
     WaveWindow() : 
-        name_pane(NamePane(pos, size, &state.name_width, ws)),
-        wave_pane(WavePane(pos, size, &state.name_width, ws)) 
+        name_pane(NamePane(pos, size, &state.name_width, ws, state)),
+        wave_pane(WavePane(pos, size, &state.name_width, ws, state)) 
     {
 
     }
 
     void update(olc::PixelGameEngine &pge){
-        uint32_t state_checkpoint = state.get_checkpoint();
-
-        if (pge.GetKey(olc::LEFT).bPressed) {
-            state.name_width = std::max(0.0f, state.name_width - 0.05f);
-        }
-        if (pge.GetKey(olc::RIGHT).bPressed) {
-            state.name_width = std::min(1.0f, state.name_width + 0.05f);
-        }
-    
-        if (state_checkpoint != state.get_checkpoint()){
-            changed = true;
-        }
+        changed = state.update(pge);
     }
 
     void draw(olc::PixelGameEngine &pge){
