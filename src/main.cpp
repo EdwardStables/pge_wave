@@ -98,6 +98,7 @@ public:
     }
 
     
+    //TODO no real need for this drawing arrangement, can be simplified
     void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge){
         auto get_next_time = [this](int time) {
             int min_time = -1;
@@ -181,26 +182,67 @@ public:
     }
 };
 
+class WaveInstance {
+public:
+    Wave* wave; 
+    std::string name_override;
+    int max;
+    int min;
+    WaveInstance(Wave* wave, int max=-1, int min=0, std::string name_override="") :
+        wave(wave),
+        max(max==-1 ? wave->width-1 : max),
+        min(min),
+        name_override(name_override)
+    {}
+
+    std::string get_name(){
+        return name_override == "" ? wave->name : name_override;
+    }
+
+    void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge){
+        wave->draw(pos, start_time, end_time, time_per_px, pge);
+    }
+};
+
 class WaveStore {
     std::vector<Wave*> waves;
+    std::vector<WaveInstance> wave_instances;
     int wave_height = 10;
     int v_gap = 5;
 public:
     WaveStore() {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 10; i++){
             waves.push_back(new Wave(&wave_height));
+        }
+
+        create_instance(0);
+        create_instance(1);
+        create_instance(1);
+        create_instance(2);
     }
 
-    int get_visible_wave_count(){
+    void create_instance(int num){
+        wave_instances.push_back(WaveInstance(get_raw_wave(num)));
+    }
+
+    int get_raw_wave_count(){
         return waves.size();
     }
 
-    std::string get_visible_wave_name(int num){
-        return waves[num]->name;
+    Wave* get_raw_wave(int num){
+        return waves[num];
     }
 
-    Wave* get_visible_wave(int num){
-        return waves[num];
+    int get_visible_wave_count(){
+        return wave_instances.size();
+    }
+
+    std::string get_visible_wave_name(int num){
+        return wave_instances[num].get_name();
+    }
+
+    WaveInstance get_visible_wave(int num){
+        return wave_instances[num];
     }
 
     int get_v_offset(int num){
@@ -307,7 +349,7 @@ public:
         uint32_t end_time =  get_size().x*state.time_per_px + state.start_time;
 
         for (int i = 0; i < ws.get_visible_wave_count(); i++){
-            ws.get_visible_wave(i)->draw(
+            ws.get_visible_wave(i).draw(
                 get_pos() + olc::vi2d(0, ws.get_v_offset(i) + state.timeline_width + 2),
                 state.start_time, end_time, 
                 state.time_per_px, pge
