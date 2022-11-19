@@ -133,6 +133,9 @@ struct Var{
     int width;
     int initial;
     std::vector<std::tuple<int,int>> value;
+    
+    //TODO: apply a mask here to indicate times bits toggle
+    std::vector<std::vector<int>> x_mask;
 
     Var(int width, string id, string name) :
         id(id),
@@ -175,6 +178,19 @@ void dump_parse(int current_time, VarStore &var_store, string data, bool initial
     std::cout << "todo, dumpparse" << std::endl;
 }
 
+void parse_multi_bit_val(int &val, std::string data){
+
+    for (int i = 0; i < data.size(); i++){
+        if (data[i] == '0') {
+            val *= 2;
+        } else
+        if (data[i] == '1') {
+            val *= 2;
+            val += 1;
+        }
+    }
+}
+
 void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TOKEN section_token, string section_data){
     string sec_str;    
 
@@ -192,14 +208,11 @@ void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TO
         case SEC_DUMPON:    sec_str = "section dumpon"; break;
         case SEC_DUMPVARS:  dump_parse(current_time, var_store, section_data); break;
         case VALUE:         
-            std::stringstream ss;
-            int val;
+            int val=0;
             if (section_data.size() == 2){
-                ss << section_data[0];
-                ss >> val;
+                val = section_data[0] == '0' ? 0 : 1;
             } else {
-                ss << section_data.substr(0, section_data.size()-1);
-                ss >> val;
+                parse_multi_bit_val(val, section_data.substr(0, section_data.size()-1));
             }
             var_store.add_change(section_data.substr(section_data.size()-1), current_time, val);
             break;
