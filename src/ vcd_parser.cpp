@@ -163,18 +163,19 @@ struct VarStore{
         vars[key]->add_change(time, value);
     }    
 
-    void parse_var(string var){
+    void parse_var(std::vector<string> var){
         std::stringstream ss;
-        ss << var;
+        ss << var[1];
         int width;
-        string symbol, name, type;
-        ss >> type >> width >> symbol >> name;
+        ss >> width;
+        string symbol = var[2];
+        string name = var[3];
+        string type = var[0];
         add_key(width, symbol, name);
     }
 };
 
-void dump_parse(int current_time, VarStore &var_store, string data, bool initial=false){
-    std::cout << "todo, dumpparse" << std::endl;
+void dump_parse(int current_time, VarStore &var_store, std::vector<string> data, bool initial=false){
 }
 
 void parse_multi_bit_val(int &val, std::string data){
@@ -190,8 +191,9 @@ void parse_multi_bit_val(int &val, std::string data){
     }
 }
 
-void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TOKEN section_token, string section_data){
+void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TOKEN section_token, std::vector<string> section_vec){
     string sec_str;    
+    string section_data = section_vec.size() > 0 ? section_vec[0] : "";
 
     switch (section_token) {
         case SEC_DATE:      metadata.date = section_data; break;
@@ -201,11 +203,11 @@ void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TO
         case SEC_SCOPE:     sec_str = "section scope"; break;
         case SEC_UPSCOPE:   sec_str = "section upscope"; break;
         case SEC_ENDDEF:    sec_str = "section enddef"; break;
-        case SEC_VAR:       var_store.parse_var(section_data); break;
-        case SEC_DUMPALL:   dump_parse(current_time, var_store, section_data, true); break;
+        case SEC_VAR:       var_store.parse_var(section_vec); break;
+        case SEC_DUMPALL:   dump_parse(current_time, var_store, section_vec, true); break;
         case SEC_DUMPOFF:   sec_str = "section dumpoff"; break;
         case SEC_DUMPON:    sec_str = "section dumpon"; break;
-        case SEC_DUMPVARS:  dump_parse(current_time, var_store, section_data); break;
+        case SEC_DUMPVARS:  dump_parse(current_time, var_store, section_vec); break;
         case VALUE:         
             int val=0;
             if (section_data.size() == 2){
@@ -230,7 +232,7 @@ bool parse(){
     bool in_section = false;
     TOKEN section_token = TOKEN_INVALID;
 
-    string contained_line;//the full contents of a section. to be passed by a section parser. Cleared by $end
+    std::vector<string> contained_line;//the full contents of a section. to be passed by a section parser. Cleared by $end
 
     while (std::getline(inputFileStream, line)){
         std::stringstream ss;
@@ -265,7 +267,7 @@ bool parse(){
                     tss >> current_time;
                 } else if (found_token == VALUE){
                     //note that a value may need the whole line
-                    section_parse(current_time, metadata, var_store, found_token, line);
+                    section_parse(current_time, metadata, var_store, found_token, {line});
                 }
             }
         }
@@ -280,8 +282,7 @@ bool parse(){
             if (tokenize(next_item) == END_SEC){
                 found_endl = true;
             } else {
-                contained_line += " ";
-                contained_line += next_item;
+                contained_line.push_back(next_item);
             }
         }
         if (found_endl) {
@@ -292,7 +293,7 @@ bool parse(){
                 prelude = false;
             }
 
-            contained_line = "";
+            contained_line.clear();
             section_token = TOKEN_INVALID; //later, jump up sections for nested sections
             in_section = false;
 
