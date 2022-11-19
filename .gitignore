@@ -11,3 +11,8 @@ CTestTestfile.cmake
 _deps
 build/
 settings.json
+*vcd
+*xml
+*pyc
+*f
+*vvp

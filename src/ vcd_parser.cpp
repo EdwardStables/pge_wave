@@ -223,7 +223,7 @@ bool parse(){
     VarStore var_store;
     int current_time;
 
-    std::ifstream inputFileStream("../../example.vcd");    
+    std::ifstream inputFileStream("../../test_rtl/test_rtl.vcd");    
     string line;
 
     bool prelude = true;
