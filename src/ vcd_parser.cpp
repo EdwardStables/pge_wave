@@ -16,7 +16,9 @@ enum TOKEN {
     SEC_DUMPALL, SEC_DUMPOFF, SEC_DUMPON, SEC_DUMPVARS,
     END_SEC,
 
-    TIMESTAMP
+   TIMESTAMP,
+
+   VALUE
 };
 
 bool is_section_header_token(TOKEN token){
@@ -25,6 +27,20 @@ bool is_section_header_token(TOKEN token){
            token == SEC_ENDDEF || token == SEC_VAR || token == SEC_DUMPALL || 
            token == SEC_DUMPOFF || token == SEC_DUMPON || token == SEC_DUMPVARS;
 
+}
+
+bool is_value(string str) {
+    //single bit value
+    if (str.size() == 2 &&
+        (str[0] == '0' || str[0] == '1' || str[0] == 'x' || str[0] == 'z') &&
+        (str[1] >= 33 && str[1] < 126)) {
+        return true;
+    }
+
+    //half-arsed attempt at multi-bit value
+    if ((str[0] == 'b' || str[0] == 'r')) return true;
+
+    return false;
 }
 
 TOKEN tokenize(string str){
@@ -43,7 +59,7 @@ TOKEN tokenize(string str){
     if (str == "$dumpon") return SEC_DUMPON;
     if (str == "$dumpvars") return SEC_DUMPVARS;
     if (str[0] == '#') return TIMESTAMP;
-
+    if (is_value(str)) return VALUE;
 
     return TOKEN_INVALID;
 }
@@ -93,26 +109,6 @@ struct VCD_Meta {
     Timescale timescale;
 };
 
-struct var {
-    int width;
-    string symbol;
-    string name;
-};
-
-struct module{
-    string name;
-    std::vector<module*> modules;
-    module* parent;
-
-    std::vector<var> vars;   
-};
-
-enum states {
-    s_top,
-    s_scope,
-    s_value_dump
-};
-
 void section_parse(TOKEN section_token, string section_data){
     string sec_str;    
 
@@ -145,30 +141,39 @@ bool parse(){
 
     string contained_line;//the full contents of a section. to be passed by a section parser. Cleared by $end
 
-    int lc = 0;
     while (std::getline(inputFileStream, line)){
         std::stringstream ss;
         ss << line;
 
         if (!in_section){
-            string sec_header;
-            ss >> sec_header;
-            TOKEN section = tokenize(sec_header);
+            string sampled_str;
+            ss >> sampled_str;
+            TOKEN found_token = tokenize(sampled_str);
 
-            if (section == TOKEN_INVALID){
-                std::cout << "invalid token found " + sec_header + ". Expected section header." << std::endl;
-                return false;
-            }
-            if (!is_section_header_token(section)){
-                std::cout << "unexpected token found " + sec_header + ". Expected section header." << std::endl;
+            if (found_token == TOKEN_INVALID){
+                std::cout << "invalid token found " + sampled_str + "." << std::endl;
                 return false;
             }
 
-            in_section = true;
-            section_token = section;
+            if (prelude){
+                if (!is_section_header_token(found_token)){
+                    std::cout << "unexpected token found " + sampled_str + ". Expected section header." << std::endl;
+                    return false;
+                }
+                in_section = true;
+                section_token = found_token;
+            } else {
+                if (is_section_header_token(found_token)){
+                    in_section = true;
+                    section_token = found_token;
+                }
+                else if (found_token == TIMESTAMP){
+                    std::cout << "timestamp " << sampled_str << std::endl;
+                }
+            }
         }
 
-        //assume at point that we're in a section
+        //assume at point that we're in a section, accumulate data for parsing
 
         string next_item;
         bool found_endl = false;
@@ -187,59 +192,15 @@ bool parse(){
             section_parse(section_token, contained_line);
 
             if (section_token == SEC_ENDDEF){
-                std::cout << "hit enddefinnitions, stopping early" << std::endl;
-                break;
+                prelude = false;
             }
+
             contained_line = "";
             section_token = TOKEN_INVALID; //later, jump up sections for nested sections
             in_section = false;
+
         }
     }
 
     return true;
-}
-
-void _parse_vcd(){
-    module top;
-    module *current = &top;
-    std::ifstream inputFileStream("../../example.vcd");    
-    string line;
-    states state;
-    
-    while (std::getline(inputFileStream, line)){
-        std::stringstream ss;
-        string start; 
-        ss << line;
-        ss >> start;
-        
-        if (start == "$scope"){
-            if (current != &top){
-                module *new_mod = new module();
-                current->modules.push_back(new_mod);
-                current = new_mod;
-            }
-        }
-
-        if (start == "$upscope"){
-            if (current != &top){
-                current = current->parent;
-            }
-        }
-
-        if (start == "$var"){
-            var v;
-            int width;
-            string sym, name, wire;
-            ss >> wire >> v.width >> v.symbol >> v.name;
-            current->vars.push_back(v);
-        }
-
-        if (start.size() > 0 && start.at(0) == '#'){
-            ss.clear();
-            ss << start.substr(1);
-            int ts;
-            ss >> ts;
-            std::cout << ts << std::endl;
-        }
-    }
 }
