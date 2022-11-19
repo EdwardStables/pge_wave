@@ -100,7 +100,24 @@ struct Timescale {
         if (ind1 == ind2-1) return 100;
         return 1;
     }
+
+    string get_base_rep() const {
+        switch(tb){
+            case TB_MS: return "ms";
+            case TB_US: return "us";
+            case TB_NS: return "ns";
+            case TB_PS: return "ps";
+            case TB_FS: return "fs";
+            default: return "s";
+        }
+    }
+
 };
+
+std::ostream& operator<< (std::ostream &out, Timescale const& data){
+    out << data.num << data.get_base_rep();
+    return out;
+}
 
 struct VCD_Meta {
     string date;
@@ -109,29 +126,63 @@ struct VCD_Meta {
     Timescale timescale;
 };
 
-void section_parse(TOKEN section_token, string section_data){
+struct Var{
+    string id;
+    string name;
+    int width;
+
+    Var(int width, string id, string name) :
+        id(id),
+        name(name),
+        width(width)
+    {}
+};
+
+std::ostream& operator<< (std::ostream &out, Var const& data){
+    out << data.name << " " << data.width << " " << data.id;
+    return out;
+}
+
+struct VarStore{
+    std::unordered_map<string,Var*> vars;
+
+    void add_key(int width, string symbol, string name){
+        vars[symbol] = new Var(width, symbol, name);
+    }
+
+    void parse_var(string var){
+        std::stringstream ss;
+        ss << var;
+        int width;
+        string symbol, name, type;
+        ss >> type >> width >> symbol >> name;
+        add_key(width, symbol, name);
+    }
+};
+
+void section_parse(VCD_Meta &metadata, VarStore &var_store, TOKEN section_token, string section_data){
     string sec_str;    
 
     switch (section_token) {
-        case SEC_DATE:      sec_str = "section date"; break;
-        case SEC_VERSION:   sec_str = "section version"; break;
-        case SEC_COMMENT:   sec_str = "section comment"; break;
+        case SEC_DATE:      metadata.date = section_data; break;
+        case SEC_VERSION:   metadata.version = section_data; break;
+        case SEC_COMMENT:   metadata.comment = section_data; break;
+        case SEC_TIMESCALE: metadata.timescale = Timescale(section_data); break;
         case SEC_SCOPE:     sec_str = "section scope"; break;
-        case SEC_TIMESCALE: sec_str = "section timescale"; break;
         case SEC_UPSCOPE:   sec_str = "section upscope"; break;
         case SEC_ENDDEF:    sec_str = "section enddef"; break;
-        case SEC_VAR:       sec_str = "section var"; break;
+        case SEC_VAR:       var_store.parse_var(section_data); break;
         case SEC_DUMPALL:   sec_str = "section dumpall"; break;
         case SEC_DUMPOFF:   sec_str = "section dumpoff"; break;
         case SEC_DUMPON:    sec_str = "section dumpon"; break;
         case SEC_DUMPVARS:  sec_str = "section dumpvars"; break;
     }
-
-    std::cout << sec_str + " " + section_data << std::endl;
 }
 
-
 bool parse(){
+    VCD_Meta metadata;
+    VarStore var_store;
+
     std::ifstream inputFileStream("../../example.vcd");    
     string line;
 
@@ -168,7 +219,7 @@ bool parse(){
                     section_token = found_token;
                 }
                 else if (found_token == TIMESTAMP){
-                    std::cout << "timestamp " << sampled_str << std::endl;
+                    //std::cout << "timestamp " << sampled_str << std::endl;
                 }
             }
         }
@@ -189,7 +240,7 @@ bool parse(){
         }
         if (found_endl) {
             //do the section specific parsing
-            section_parse(section_token, contained_line);
+            section_parse(metadata, var_store, section_token, contained_line);
 
             if (section_token == SEC_ENDDEF){
                 prelude = false;
@@ -200,6 +251,15 @@ bool parse(){
             in_section = false;
 
         }
+    }
+
+    std::cout << metadata.date << std::endl;
+    std::cout << metadata.comment << std::endl;
+    std::cout << metadata.version << std::endl;
+    std::cout << metadata.timescale << std::endl;
+
+    for(auto &v : var_store.vars){
+        std::cout << *v.second << std::endl;
     }
 
     return true;
