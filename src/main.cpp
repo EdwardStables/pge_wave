@@ -5,6 +5,7 @@
 #include <sstream>
 #include <time.h>
 #include <iostream>
+#include "vcd_parser.h"
 
 //Test function
 std::vector<uint32_t> random_wave(int len){
@@ -466,10 +467,12 @@ public:
 
 int main()
 {
-    srand(time(NULL));
-    WaveGUI game;
-    if(game.Construct(1501, 1001, 1, 1))
-        game.Start();
+    //srand(time(NULL));
+    //WaveGUI game;
+    //if(game.Construct(1501, 1001, 1, 1))
+    //    game.Start();
+
+    parse();
 
     return 0;
 }
