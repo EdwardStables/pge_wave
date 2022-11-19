@@ -81,8 +81,7 @@ struct Timescale {
     
     static TIMEBASE get_timebase(string ts) {
         int s_ind = ts.find('s');
-
-        switch(ts[s_ind]-1){
+        switch(ts[s_ind-1]){
             case 'm': return TB_MS;
             case 'u': return TB_US;
             case 'n': return TB_NS;
@@ -303,7 +302,7 @@ bool parse(){
     std::cout << metadata.date << std::endl;
     std::cout << metadata.comment << std::endl;
     std::cout << metadata.version << std::endl;
-    std::cout << metadata.timescale << std::endl;
+    std::cout << "Timescale: " << metadata.timescale << std::endl;
 
     for(auto &v : var_store.vars){
         std::cout << *v.second << std::endl;
