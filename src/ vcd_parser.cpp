@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <tuple>
 #include <unordered_map>
 
 using string = std::string;
@@ -130,12 +131,18 @@ struct Var{
     string id;
     string name;
     int width;
+    int initial;
+    std::vector<std::tuple<int,int>> value;
 
     Var(int width, string id, string name) :
         id(id),
         name(name),
         width(width)
     {}
+
+    void add_change(int time, int next_value){
+        value.push_back(std::make_tuple(time, next_value));
+    }
 };
 
 std::ostream& operator<< (std::ostream &out, Var const& data){
@@ -150,6 +157,10 @@ struct VarStore{
         vars[symbol] = new Var(width, symbol, name);
     }
 
+    void add_change(string key, int time, int value){
+        vars[key]->add_change(time, value);
+    }    
+
     void parse_var(string var){
         std::stringstream ss;
         ss << var;
@@ -160,7 +171,11 @@ struct VarStore{
     }
 };
 
-void section_parse(VCD_Meta &metadata, VarStore &var_store, TOKEN section_token, string section_data){
+void dump_parse(int current_time, VarStore &var_store, string data, bool initial=false){
+    std::cout << "todo, dumpparse" << std::endl;
+}
+
+void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TOKEN section_token, string section_data){
     string sec_str;    
 
     switch (section_token) {
@@ -172,16 +187,29 @@ void section_parse(VCD_Meta &metadata, VarStore &var_store, TOKEN section_token,
         case SEC_UPSCOPE:   sec_str = "section upscope"; break;
         case SEC_ENDDEF:    sec_str = "section enddef"; break;
         case SEC_VAR:       var_store.parse_var(section_data); break;
-        case SEC_DUMPALL:   sec_str = "section dumpall"; break;
+        case SEC_DUMPALL:   dump_parse(current_time, var_store, section_data, true); break;
         case SEC_DUMPOFF:   sec_str = "section dumpoff"; break;
         case SEC_DUMPON:    sec_str = "section dumpon"; break;
-        case SEC_DUMPVARS:  sec_str = "section dumpvars"; break;
+        case SEC_DUMPVARS:  dump_parse(current_time, var_store, section_data); break;
+        case VALUE:         
+            std::stringstream ss;
+            int val;
+            if (section_data.size() == 2){
+                ss << section_data[0];
+                ss >> val;
+            } else {
+                ss << section_data.substr(0, section_data.size()-1);
+                ss >> val;
+            }
+            var_store.add_change(section_data.substr(section_data.size()-1), current_time, val);
+            break;
     }
 }
 
 bool parse(){
     VCD_Meta metadata;
     VarStore var_store;
+    int current_time;
 
     std::ifstream inputFileStream("../../example.vcd");    
     string line;
@@ -219,7 +247,13 @@ bool parse(){
                     section_token = found_token;
                 }
                 else if (found_token == TIMESTAMP){
-                    //std::cout << "timestamp " << sampled_str << std::endl;
+                    string ts = sampled_str.substr(1);
+                    std::stringstream tss;
+                    tss << ts;
+                    tss >> current_time;
+                } else if (found_token == VALUE){
+                    //note that a value may need the whole line
+                    section_parse(current_time, metadata, var_store, found_token, line);
                 }
             }
         }
@@ -240,7 +274,7 @@ bool parse(){
         }
         if (found_endl) {
             //do the section specific parsing
-            section_parse(metadata, var_store, section_token, contained_line);
+            section_parse(current_time, metadata, var_store, section_token, contained_line);
 
             if (section_token == SEC_ENDDEF){
                 prelude = false;
@@ -260,6 +294,11 @@ bool parse(){
 
     for(auto &v : var_store.vars){
         std::cout << *v.second << std::endl;
+        std::cout << "    ";
+        for (auto &val : v.second->value){
+            std::cout << "(" << std::get<0>(val) << ", " << std::get<1>(val) << ") ";
+        }
+        std::cout << std::endl;
     }
 
     return true;
