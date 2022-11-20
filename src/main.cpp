@@ -33,7 +33,7 @@ int main()
     if(game.Construct(1501, 1001, 1, 1))
         game.Start();
 
-    //parse();
+    parse();
 
     return 0;
 }

@@ -12,20 +12,6 @@
 
 using string = std::string;
 
-enum TOKEN {
-    TOKEN_INVALID,    
-
-    //Sections
-    SEC_DATE, SEC_VERSION, SEC_COMMENT, SEC_SCOPE,
-    SEC_TIMESCALE, SEC_UPSCOPE, SEC_ENDDEF, SEC_VAR,
-    SEC_DUMPALL, SEC_DUMPOFF, SEC_DUMPON, SEC_DUMPVARS,
-    END_SEC,
-
-   TIMESTAMP,
-
-   VALUE
-};
-
 bool is_section_header_token(TOKEN token){
     return token == SEC_DATE || token == SEC_VERSION || token == SEC_COMMENT || 
            token == SEC_SCOPE || token == SEC_TIMESCALE || token == SEC_UPSCOPE || 
@@ -69,69 +55,53 @@ TOKEN tokenize(string str){
     return TOKEN_INVALID;
 }
 
-enum TIMEBASE {
-    TB_S, TB_MS, TB_US, TB_NS, TB_PS, TB_FS
-};
 
-struct Timescale {
-    int num; //VCD specifies 1, 10, or 100.
-    TIMEBASE tb; 
+Timescale::Timescale() : Timescale("1ns") {}
 
-    Timescale() : Timescale("1ns") {}
-    Timescale(string ts) :
-        tb(get_timebase(ts)),
-        num(get_num(ts))
-    {}
-    
-    static TIMEBASE get_timebase(string ts) {
-        int s_ind = ts.find('s');
-        switch(ts[s_ind-1]){
-            case 'm': return TB_MS;
-            case 'u': return TB_US;
-            case 'n': return TB_NS;
-            case 'p': return TB_PS;
-            case 'f': return TB_FS;
-            default: return TB_S;
-        }
+Timescale::Timescale(string ts) :
+    tb(get_timebase(ts)),
+    num(get_num(ts))
+{}
+
+TIMEBASE Timescale::get_timebase(string ts) {
+    int s_ind = ts.find('s');
+    switch(ts[s_ind-1]){
+        case 'm': return TB_MS;
+        case 'u': return TB_US;
+        case 'n': return TB_NS;
+        case 'p': return TB_PS;
+        case 'f': return TB_FS;
+        default: return TB_S;
     }
+}
 
-    static int get_num(string ts) {
-        //this is so hacky
-        int ind1 = ts.find_first_of("0");
-        int ind2 = ts.find_last_of("0");
-        if (ind1 == -1 && ind2 == -1) return 1;
-        if (ind1 == ind2) return 10;
-        if (ind1 == ind2-1) return 100;
-        return 1;
+int Timescale::get_num(string ts) {
+    //this is so hacky
+    int ind1 = ts.find_first_of("0");
+    int ind2 = ts.find_last_of("0");
+    if (ind1 == -1 && ind2 == -1) return 1;
+    if (ind1 == ind2) return 10;
+    if (ind1 == ind2-1) return 100;
+    return 1;
+}
+
+string Timescale::get_base_rep() const {
+    switch(tb){
+        case TB_MS: return "ms";
+        case TB_US: return "us";
+        case TB_NS: return "ns";
+        case TB_PS: return "ps";
+        case TB_FS: return "fs";
+        default: return "s";
     }
-
-    string get_base_rep() const {
-        switch(tb){
-            case TB_MS: return "ms";
-            case TB_US: return "us";
-            case TB_NS: return "ns";
-            case TB_PS: return "ps";
-            case TB_FS: return "fs";
-            default: return "s";
-        }
-    }
-
-};
+}
 
 std::ostream& operator<< (std::ostream &out, Timescale const& data){
     out << data.num << data.get_base_rep();
     return out;
 }
 
-struct VCD_Meta {
-    string date;
-    string version;
-    string comment;
-    Timescale timescale;
-};
-
 void parse_multi_bit_val(int &val, std::string data){
-
     for (int i = 0; i < data.size(); i++){
         if (data[i] == '0') {
             val *= 2;
@@ -154,7 +124,7 @@ void value_parse(int current_time, VarStore &var_store, std::vector<string> data
     var_store.add_change(last.substr(last.size()-1), current_time, val);
 }
 
-void dump_parse(int current_time, VarStore &var_store, std::vector<string> data, bool initial=false){
+void dump_parse(int current_time, VarStore &var_store, std::vector<string> data, bool initial){
     std::vector<string> to_send;
     for (auto &s : data){
         if (s[0]=='b' || s[1]=='r'){
