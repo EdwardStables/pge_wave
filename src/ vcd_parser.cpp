@@ -115,7 +115,7 @@ void parse_multi_bit_val(int &val, std::string data){
 
 void value_parse(int current_time, VarStore &var_store, std::vector<string> data){
     int val=0;
-    if (data.size() == 1){
+    if (data[0][0] != 'b' && data[0][0] != 'r'){
         val = data[0][0] == '0' ? 0 : 1;
     } else {
         parse_multi_bit_val(val, data[0]);
