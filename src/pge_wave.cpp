@@ -217,7 +217,9 @@ WavePane::WavePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &
 void WavePane::draw_timeline(olc::PixelGameEngine &pge){
     //bar
     pge.FillRect(get_pos(), {get_size().x, state.timeline_width});
-    int interval = 100; //what time interval to draw markers
+    
+    int time_width = get_size().x * state.time_per_px;
+    int interval = time_width/10; //what time interval to draw markers
 
     float time = state.start_time;
     int last_time = -1;
