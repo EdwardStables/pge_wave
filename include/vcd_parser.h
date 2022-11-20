@@ -47,7 +47,7 @@ void parse_multi_bit_val(int &val, std::string data);
 void value_parse(int current_time, VarStore &var_store, std::vector<std::string> data);
 void dump_parse(int current_time, VarStore &var_store, std::vector<std::string> data, bool initial=false);
 void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TOKEN section_token, std::vector<std::string> section_vec);
-bool parse();
+bool parse(VarStore &var_store);
 
 
 #endif

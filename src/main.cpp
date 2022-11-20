@@ -29,13 +29,12 @@ public:
 
 int main()
 {
-    //VarStore store;
-    //srand(time(NULL));
-    //WaveGUI game(store);
-    //if(game.Construct(1501, 1001, 1, 1))
-    //    game.Start();
-
-    parse();
+    VarStore store;
+    parse(store);
+    srand(time(NULL));
+    WaveGUI game(store);
+    if(game.Construct(1501, 1001, 1, 1))
+        game.Start();
 
     return 0;
 }

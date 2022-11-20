@@ -13,6 +13,16 @@ std::vector<uint32_t> random_wave(int len){
     return data;
 }
 
+Wave::Wave(int *height, std::string name, int width) : 
+    height(height),
+    name(name),
+    width(width)
+{
+    for (int i = 0; i < width; i++){
+        data.push_back(random_wave(10));
+    }
+}
+
 Wave::Wave(int *height) :
     height(height)
 {
@@ -131,7 +141,8 @@ void WaveInstance::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, f
 }
 
 WaveStore::WaveStore(VarStore &store) : varstore(store) {
-    waves.push_back(new Wave(&wave_height));
+    for (auto &w : varstore.get_vars())
+        waves.push_back(new Wave(&wave_height, w.name, w.width));
 }
 
 void WaveStore::create_instance(int num){

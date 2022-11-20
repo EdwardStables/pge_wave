@@ -20,6 +20,7 @@ public:
     int width;
 
     Wave(int *height);
+    Wave(int *height, std::string name, int width);
     void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge);
     void draw_template(
         olc::vi2d pos,

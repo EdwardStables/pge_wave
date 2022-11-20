@@ -164,9 +164,8 @@ void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TO
     }
 }
 
-bool parse(){
+bool parse(VarStore &var_store){
     VCD_Meta metadata;
-    VarStore var_store;
     int current_time;
 
     std::ifstream inputFileStream("../../test_rtl/test_rtl.vcd");    
