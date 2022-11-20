@@ -245,11 +245,11 @@ bool parse(VarStore &var_store){
 
 
     //scale to ns, assumes ps output, so fix this at some point
-    for(auto &var : var_store.vars){
-        for (auto &v : var.value){
-            std::get<0>(v) /= 1000;
-        }
-    }
+    ///for(auto &var : var_store.vars){
+    ///    for (auto &v : var.value){
+    ///        std::get<0>(v) /= 1000;
+    ///    }
+    ///}
 
     std::cout << metadata.date << std::endl;
     std::cout << metadata.comment << std::endl;

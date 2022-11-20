@@ -16,11 +16,11 @@ std::vector<uint32_t> random_wave(int len);
 class Wave {
 public:
     std::string name;
-    const Var &data;
+    VarStore &data;
     int *height;
     int width;
 
-    Wave(int *height, Var &data);
+    Wave(std::string name, int *height, VarStore &data);
     void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge);
 };
 

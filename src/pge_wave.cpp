@@ -13,24 +13,22 @@ std::vector<uint32_t> random_wave(int len){
     return data;
 }
 
-Wave::Wave(int *height, Var &data) :
+Wave::Wave(std::string name, int *height, VarStore &data) :
     height(height),
-    name(data.name),
-    width(data.width),
+    name(name),
+    width(data.get_var_by_name(name).width), //this needs a nicer solution
     data(data)
 {
 }
 
-//TODO no real need for this drawing arrangement, can be simplified
 void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge){
     bool drawing = false;
     int screen_x = pos.x;
     int last_d = 0;
     
     uint32_t d = start_time;
-
     while (d != -1){
-        int val = data.val_at_time(d);
+        int val = data.get_var_by_name(name).val_at_time(d);
         int new_screen_x;
         bool should_stop = false;
 
@@ -46,7 +44,7 @@ void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float tim
         }
 
         //todo can abstract this to lambdas probably
-        if (data.width > 1){
+        if (width > 1){
             pge.DrawRect({screen_x, pos.y}, {new_screen_x-screen_x, *height}, olc::GREEN);
             std::stringstream ss;
             //todo for radix, this needs to change
@@ -63,7 +61,7 @@ void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float tim
         }
         screen_x = new_screen_x;
         last_d = d;
-        d = data.get_next_time(d);
+        d = data.get_var_by_name(name).get_next_time(d);
     }
 }
 
@@ -85,7 +83,7 @@ void WaveInstance::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, f
 
 WaveStore::WaveStore(VarStore &store) : varstore(store) {
     for (auto &w : varstore.get_vars())
-        waves.push_back(new Wave(&wave_height, w));
+        waves.push_back(new Wave(w.name, &wave_height, varstore));
 }
 
 void WaveStore::create_instance(int num){

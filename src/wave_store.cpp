@@ -65,3 +65,9 @@ std::ostream& operator<< (std::ostream &out, Var const& data){
 std::vector<Var> VarStore::get_vars(){
     return vars;
 }
+
+Var& VarStore::get_var_by_name(std::string name){
+    for(auto &v : vars){
+        if (v.name == name) return v;
+    }
+}

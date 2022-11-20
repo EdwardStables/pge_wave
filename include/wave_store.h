@@ -29,6 +29,7 @@ struct VarStore{
     std::unordered_map<std::string,int> var_map;
     std::vector<Var> vars;
     std::vector<Var> get_vars();
+    Var& get_var_by_name(std::string name);
     void add_key(int width, std::string symbol, std::string name);
     void add_change(std::string key, int time, int value);
     void parse_var(std::vector<std::string> var);
