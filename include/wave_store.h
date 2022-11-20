@@ -19,6 +19,8 @@ struct Var{
 
     Var(int width, std::string id, std::string name);
     void add_change(int time, int next_value);
+    int val_at_time(int time) const;
+    int get_next_time(int time) const;
 };
 
 std::ostream& operator<< (std::ostream &out, Var const& data);
@@ -26,7 +28,7 @@ std::ostream& operator<< (std::ostream &out, Var const& data);
 struct VarStore{
     std::unordered_map<std::string,int> var_map;
     std::vector<Var> vars;
-    const std::vector<Var>& get_vars();
+    std::vector<Var> get_vars();
     void add_key(int width, std::string symbol, std::string name);
     void add_change(std::string key, int time, int value);
     void parse_var(std::vector<std::string> var);

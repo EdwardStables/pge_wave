@@ -12,6 +12,26 @@ void Var::add_change(int time, int next_value){
     value.push_back(tup);
 }
 
+int Var::val_at_time(int time) const{
+    int val = 0;
+    for (auto &v : value){
+        if (std::get<0>(v) > time){
+            return val;
+        } else {
+            val = std::get<1>(v);
+        }
+    }
+    return val;
+}
+
+int Var::get_next_time(int time) const{
+    for (auto &v : value){
+        if (std::get<0>(v) > time) return std::get<0>(v);
+    }
+
+    return -1;
+}
+
 void VarStore::add_key(int width, std::string symbol, std::string name){
     Var v(width, symbol, name);
     vars.push_back(v);
@@ -42,6 +62,6 @@ std::ostream& operator<< (std::ostream &out, Var const& data){
     return out;
 }
 
-const std::vector<Var>& VarStore::get_vars(){
+std::vector<Var> VarStore::get_vars(){
     return vars;
 }

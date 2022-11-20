@@ -13,72 +13,16 @@ std::vector<uint32_t> random_wave(int len){
     return data;
 }
 
-Wave::Wave(int *height, std::string name, int width) : 
+Wave::Wave(int *height, Var &data) :
     height(height),
-    name(name),
-    width(width)
+    name(data.name),
+    width(data.width),
+    data(data)
 {
-    for (int i = 0; i < width; i++){
-        data.push_back(random_wave(10));
-    }
-}
-
-Wave::Wave(int *height) :
-    height(height)
-{
-    std::stringstream ss;
-    ss << "wave_" << rand();
-    width = rand() % 7;
-    if (width == 0) width = 1;
-    for (int i = 0; i < width; i++){
-        data.push_back(random_wave(10));
-    }
-
-    if (width > 1) ss << " [" << width-1 << ":0]";
-
-    name = ss.str();
 }
 
 //TODO no real need for this drawing arrangement, can be simplified
 void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge){
-    auto get_next_time = [this](int time) {
-        int min_time = -1;
-        for (auto d : this->data){
-            for (auto t : d){
-                if (t <= time) continue;
-                if (t < min_time || min_time == -1) min_time = t; 
-                break;
-            }
-        }
-        return min_time;
-    };
-
-    auto data_at_time = [this](int time) {
-        uint32_t result = 0;
-        for (int i = 0; i < this->width; i++){
-            uint32_t d1b = 0;
-            for (auto &d : data[i]){
-                if(d < time) d1b = !d1b;
-                else break;
-            }
-            result += d1b << i;
-        }
-        return result;
-    };
-
-    draw_template(pos, pge, get_next_time, data_at_time, start_time, end_time, time_per_px, width != 1);
-}
-
-void Wave::draw_template(
-    olc::vi2d pos,
-    olc::PixelGameEngine &pge,
-    std::function<int(int)> get_next_time,
-    std::function<int(int)> data_at_time,
-    uint32_t start_time,
-    uint32_t end_time,
-    float time_per_px,
-    bool bus
-){
     bool drawing = false;
     int screen_x = pos.x;
     int last_d = 0;
@@ -86,7 +30,7 @@ void Wave::draw_template(
     uint32_t d = start_time;
 
     while (d != -1){
-        int val = data_at_time(d);
+        int val = data.val_at_time(d);
         int new_screen_x;
         bool should_stop = false;
 
@@ -102,7 +46,7 @@ void Wave::draw_template(
         }
 
         //todo can abstract this to lambdas probably
-        if (bus){
+        if (data.width > 1){
             pge.DrawRect({screen_x, pos.y}, {new_screen_x-screen_x, *height}, olc::GREEN);
             std::stringstream ss;
             //todo for radix, this needs to change
@@ -119,10 +63,9 @@ void Wave::draw_template(
         }
         screen_x = new_screen_x;
         last_d = d;
-        d = get_next_time(d);
+        d = data.get_next_time(d);
     }
 }
-
 
 WaveInstance::WaveInstance(Wave* wave, int max, int min, std::string name_override) :
     wave(wave),
@@ -142,7 +85,7 @@ void WaveInstance::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, f
 
 WaveStore::WaveStore(VarStore &store) : varstore(store) {
     for (auto &w : varstore.get_vars())
-        waves.push_back(new Wave(&wave_height, w.name, w.width));
+        waves.push_back(new Wave(&wave_height, w));
 }
 
 void WaveStore::create_instance(int num){

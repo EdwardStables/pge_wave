@@ -7,6 +7,7 @@
 #include <sstream>
 #include <time.h>
 #include <iostream>
+#include <tuple>
 #include "olcPixelGameEngine.h"
 #include "wave_store.h"
 
@@ -15,23 +16,12 @@ std::vector<uint32_t> random_wave(int len);
 class Wave {
 public:
     std::string name;
-    std::vector<std::vector<uint32_t>> data;
+    const Var &data;
     int *height;
     int width;
 
-    Wave(int *height);
-    Wave(int *height, std::string name, int width);
+    Wave(int *height, Var &data);
     void draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge);
-    void draw_template(
-        olc::vi2d pos,
-        olc::PixelGameEngine &pge,
-        std::function<int(int)> get_next_time,
-        std::function<int(int)> data_at_time,
-        uint32_t start_time,
-        uint32_t end_time,
-        float time_per_px,
-        bool bus=false
-    );
 };
 
 class WaveInstance {
