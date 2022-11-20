@@ -130,10 +130,8 @@ void WaveInstance::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, f
     wave->draw(pos, start_time, end_time, time_per_px, pge);
 }
 
-WaveStore::WaveStore() {
-    for (int i = 0; i < 10; i++){
-        waves.push_back(new Wave(&wave_height));
-    }
+WaveStore::WaveStore(VarStore &store) : varstore(store) {
+    waves.push_back(new Wave(&wave_height));
 }
 
 void WaveStore::create_instance(int num){
@@ -331,12 +329,13 @@ void WavePicker::draw(olc::PixelGameEngine &pge){
     }
 }
 
-WaveWindow::WaveWindow(olc::PixelGameEngine &pge) : 
+WaveWindow::WaveWindow(olc::PixelGameEngine &pge, VarStore &store) : 
     pge(pge),
     state(pge, ws),
     name_pane(NamePane(pos, size, &state.name_width, ws, state)),
     wave_pane(WavePane(pos, size, &state.name_width, ws, state)),
-    wave_picker(WavePicker(pos, size, state, ws)) 
+    wave_picker(WavePicker(pos, size, state, ws)),
+    ws(store)
 {
 
 }

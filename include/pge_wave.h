@@ -8,6 +8,7 @@
 #include <time.h>
 #include <iostream>
 #include "olcPixelGameEngine.h"
+#include "wave_store.h"
 
 std::vector<uint32_t> random_wave(int len);
 
@@ -45,12 +46,13 @@ public:
 };
 
 class WaveStore {
+    VarStore &varstore;
     std::vector<Wave*> waves;
     std::vector<WaveInstance> wave_instances;
     int wave_height = 10;
     int v_gap = 5;
 public:
-    WaveStore();
+    WaveStore(VarStore &store);
     void create_instance(int num);
     int get_raw_wave_count();
     Wave* get_raw_wave(int num);
@@ -145,7 +147,7 @@ public:
     olc::PixelGameEngine &pge;
     bool firstframe = true;
     
-    WaveWindow(olc::PixelGameEngine &pge);
+    WaveWindow(olc::PixelGameEngine &pge, VarStore &store);
     void draw();
 };
 

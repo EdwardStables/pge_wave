@@ -249,10 +249,10 @@ bool parse(){
     std::cout << metadata.version << std::endl;
     std::cout << "Timescale: " << metadata.timescale << std::endl;
 
-    for(auto &v : var_store.vars){
-        std::cout << *v.second << std::endl;
+    for(auto &v : var_store.var_map){
+        std::cout << var_store.vars[v.second] << std::endl;
         std::cout << "    ";
-        for (auto &val : v.second->value){
+        for (auto &val : var_store.vars[v.second].value){
             std::cout << "(" << std::get<0>(val) << ", " << std::get<1>(val) << ") ";
         }
         std::cout << std::endl;

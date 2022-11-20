@@ -1,12 +1,13 @@
 #include "olcPixelGameEngine.h"
 #include "vcd_parser.h"
+#include "wave_store.h"
 #include "pge_wave.h"
 
 class WaveGUI : public olc::PixelGameEngine
 {
 public:
     WaveWindow wave_window;
-    WaveGUI() : wave_window(*this)
+    WaveGUI(VarStore &store) : wave_window(*this, store)
     {
         sAppName = "WaveGUI";
     }
@@ -28,14 +29,13 @@ public:
 
 int main()
 {
-    srand(time(NULL));
-    WaveGUI game;
-    if(game.Construct(1501, 1001, 1, 1))
-        game.Start();
+    //VarStore store;
+    //srand(time(NULL));
+    //WaveGUI game(store);
+    //if(game.Construct(1501, 1001, 1, 1))
+    //    game.Start();
 
     parse();
 
     return 0;
 }
-
-
