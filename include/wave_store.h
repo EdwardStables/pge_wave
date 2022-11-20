@@ -17,15 +17,8 @@ struct Var{
     //TODO: apply a mask here to indicate times bits toggle
     std::vector<std::vector<int>> x_mask;
 
-    Var(int width, std::string id, std::string name) :
-        id(id),
-        name(name),
-        width(width)
-    {}
-
-    void add_change(int time, int next_value){
-        value.push_back(std::make_tuple(time, next_value));
-    }
+    Var(int width, std::string id, std::string name);
+    void add_change(int time, int next_value);
 };
 
 std::ostream& operator<< (std::ostream &out, Var const& data);
@@ -33,23 +26,8 @@ std::ostream& operator<< (std::ostream &out, Var const& data);
 struct VarStore{
     std::unordered_map<std::string,Var*> vars;
 
-    void add_key(int width, std::string symbol, std::string name){
-        vars[symbol] = new Var(width, symbol, name);
-    }
-
-    void add_change(std::string key, int time, int value){
-        vars[key]->add_change(time, value);
-    }    
-
-    void parse_var(std::vector<std::string> var){
-        std::stringstream ss;
-        ss << var[1];
-        int width;
-        ss >> width;
-        std::string symbol = var[2];
-        std::string name = var[3];
-        std::string type = var[0];
-        add_key(width, symbol, name);
-    }
+    void add_key(int width, std::string symbol, std::string name);
+    void add_change(std::string key, int time, int value);
+    void parse_var(std::vector<std::string> var);
 };
 #endif
