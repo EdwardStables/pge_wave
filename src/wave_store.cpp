@@ -15,7 +15,7 @@ void Var::add_change(int time, int next_value){
 int Var::val_at_time(int time) const{
     int val = 0;
     for (auto &v : value){
-        if (std::get<0>(v) > time){
+        if (std::get<0>(v) >= time){
             return val;
         } else {
             val = std::get<1>(v);
