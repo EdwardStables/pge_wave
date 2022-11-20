@@ -2,9 +2,12 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <iterator>
 #include <vector>
 #include <tuple>
 #include <unordered_map>
+#include <numeric>
+#include <string>
 
 using string = std::string;
 
@@ -193,7 +196,13 @@ void parse_multi_bit_val(int &val, std::string data){
 
 void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TOKEN section_token, std::vector<string> section_vec){
     string sec_str;    
-    string section_data = section_vec.size() > 0 ? section_vec[0] : "";
+    const char* const delim = " ";
+    std::ostringstream oss;
+    string section_data = "";
+    if (section_vec.size() > 0){
+        std::copy(section_vec.begin(), section_vec.end(), std::ostream_iterator<string>(oss,delim));
+        section_data = oss.str();
+    }
 
     switch (section_token) {
         case SEC_DATE:      metadata.date = section_data; break;
@@ -201,7 +210,7 @@ void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TO
         case SEC_COMMENT:   metadata.comment = section_data; break;
         case SEC_TIMESCALE: metadata.timescale = Timescale(section_data); break;
         case SEC_SCOPE:     sec_str = "section scope"; break;
-        case SEC_UPSCOPE:   sec_str = "section upscope"; break;
+        case SEC_UPSCOPE:   std::cout << "upscope" << std::endl; sec_str = "section upscope"; break;
         case SEC_ENDDEF:    sec_str = "section enddef"; break;
         case SEC_VAR:       var_store.parse_var(section_vec); break;
         case SEC_DUMPALL:   dump_parse(current_time, var_store, section_vec, true); break;
@@ -210,12 +219,13 @@ void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TO
         case SEC_DUMPVARS:  dump_parse(current_time, var_store, section_vec); break;
         case VALUE:         
             int val=0;
-            if (section_data.size() == 2){
-                val = section_data[0] == '0' ? 0 : 1;
+            if (section_vec.size() == 1){
+                val = section_vec[0][0] == '0' ? 0 : 1;
             } else {
                 parse_multi_bit_val(val, section_data.substr(0, section_data.size()-1));
             }
-            var_store.add_change(section_data.substr(section_data.size()-1), current_time, val);
+            std::string last = section_vec[section_vec.size()-1];
+            var_store.add_change(last.substr(last.size()-1), current_time, val);
             break;
     }
 }
