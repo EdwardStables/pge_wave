@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <numeric>
 #include <string>
+#include "wave_store.h"
 
 using string = std::string;
 
@@ -127,55 +128,6 @@ struct VCD_Meta {
     string version;
     string comment;
     Timescale timescale;
-};
-
-struct Var{
-    string id;
-    string name;
-    int width;
-    int initial;
-    std::vector<std::tuple<int,int>> value;
-    
-    //TODO: apply a mask here to indicate times bits toggle
-    std::vector<std::vector<int>> x_mask;
-
-    Var(int width, string id, string name) :
-        id(id),
-        name(name),
-        width(width)
-    {}
-
-    void add_change(int time, int next_value){
-        value.push_back(std::make_tuple(time, next_value));
-    }
-};
-
-std::ostream& operator<< (std::ostream &out, Var const& data){
-    out << data.name << " " << data.width << " " << data.id;
-    return out;
-}
-
-struct VarStore{
-    std::unordered_map<string,Var*> vars;
-
-    void add_key(int width, string symbol, string name){
-        vars[symbol] = new Var(width, symbol, name);
-    }
-
-    void add_change(string key, int time, int value){
-        vars[key]->add_change(time, value);
-    }    
-
-    void parse_var(std::vector<string> var){
-        std::stringstream ss;
-        ss << var[1];
-        int width;
-        ss >> width;
-        string symbol = var[2];
-        string name = var[3];
-        string type = var[0];
-        add_key(width, symbol, name);
-    }
 };
 
 void parse_multi_bit_val(int &val, std::string data){
