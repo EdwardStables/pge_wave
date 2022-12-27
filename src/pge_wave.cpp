@@ -89,8 +89,10 @@ void WaveInstance::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, f
 }
 
 WaveStore::WaveStore(VarStore &store) : varstore(store) {
-    for (auto &w : varstore.get_vars())
+    for (auto &w : varstore.get_vars()){
         waves.push_back(new Wave(w.name, &wave_height, varstore));
+        end_time = std::max(end_time, std::get<0>(w.value.back()));
+    }
 }
 
 void WaveStore::create_instance(int num){
@@ -119,6 +121,10 @@ WaveInstance WaveStore::get_visible_wave(int num){
 
 int WaveStore::get_v_offset(int num){
     return wave_height + num*(v_gap + wave_height);
+}
+
+int WaveStore::get_end_time(){
+    return end_time;
 }
 
 State::State(olc::PixelGameEngine &pge, WaveStore &ws) : 
@@ -248,7 +254,7 @@ void WavePane::draw(olc::PixelGameEngine &pge){
     draw_timeline(pge);
 
 
-    uint32_t end_time =  get_size().x*state.time_per_px + state.start_time;
+    uint32_t end_time =  std::min((float)ws.get_end_time(), get_size().x*state.time_per_px + state.start_time);
 
     for (int i = 0; i < ws.get_visible_wave_count(); i++){
         ws.get_visible_wave(i).draw(

@@ -40,6 +40,7 @@ class WaveStore {
     VarStore &varstore;
     std::vector<Wave*> waves;
     std::vector<WaveInstance> wave_instances;
+    int end_time = 0;
     int wave_height = 10;
     int v_gap = 5;
 public:
@@ -51,6 +52,7 @@ public:
     std::string get_visible_wave_name(int num);
     WaveInstance get_visible_wave(int num);
     int get_v_offset(int num);
+    int get_end_time();
 };
 
 struct State {
