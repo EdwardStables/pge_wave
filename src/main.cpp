@@ -30,7 +30,13 @@ public:
 int main()
 {
     VarStore store;
-    parse(store);
+    bool parse_result = parse(store);
+
+    if (!parse_result){
+        std::cout << "Exiting due to parser problem" << std::endl;
+        return 1;
+    }
+
     srand(time(NULL));
     WaveGUI game(store);
     if(game.Construct(1501, 1001, 1, 1))

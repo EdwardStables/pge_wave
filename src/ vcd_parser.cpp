@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <numeric>
 #include <string>
+#include <filesystem>
 #include "wave_store.h"
 
 using string = std::string;
@@ -164,11 +165,26 @@ void section_parse(int current_time, VCD_Meta &metadata, VarStore &var_store, TO
     }
 }
 
+bool file_exists(std::string path){
+    std::ifstream file(path);
+    if(!file.is_open()){
+        std::cout << "File not found" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 bool parse(VarStore &var_store){
     VCD_Meta metadata;
     int current_time;
 
-    std::ifstream inputFileStream("test_rtl/test_rtl.vcd");    
+    std::string filepath = "test_rtl/test_rtl.vcd";
+
+    if (!file_exists(filepath)){
+        return false;
+    } 
+    std::ifstream inputFileStream(filepath);    
     string line;
 
     bool prelude = true;
@@ -243,28 +259,12 @@ bool parse(VarStore &var_store){
         }
     }
 
-
     //scale to ns, assumes ps output, so fix this at some point
     ///for(auto &var : var_store.vars){
     ///    for (auto &v : var.value){
     ///        std::get<0>(v) /= 1000;
     ///    }
     ///}
-
-    std::cout << metadata.date << std::endl;
-    std::cout << metadata.comment << std::endl;
-    std::cout << metadata.version << std::endl;
-    std::cout << "Timescale: " << metadata.timescale << std::endl;
-
-    for(auto &v : var_store.var_map){
-        std::cout << var_store.vars[v.second] << std::endl;
-        std::cout << "    ";
-        for (auto &val : var_store.vars[v.second].value){
-            std::cout << "(" << std::get<0>(val) << ", " << std::get<1>(val) << ") ";
-        }
-        std::cout << std::endl;
-    }
-
 
     return true;
 }
