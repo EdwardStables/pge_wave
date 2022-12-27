@@ -25,14 +25,15 @@ void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float tim
     bool drawing = false;
     int screen_x = pos.x;
     int last_d = 0;
+    bool draw_to_end_time = false;
     
     uint32_t d = start_time;
-    while (d != -1){
+    while (true){
         int val = data.get_var_by_name(name).val_at_time(d);
         int new_screen_x;
         bool should_stop = false;
 
-        if (d > end_time){
+        if (d > end_time || draw_to_end_time){
             new_screen_x = screen_x+float(end_time-last_d)/time_per_px;
             should_stop = true;
         } else {
@@ -62,6 +63,12 @@ void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float tim
         screen_x = new_screen_x;
         last_d = d;
         d = data.get_var_by_name(name).get_next_time(d);
+
+        //When beyond the range of the variable, still need to draw to the end of the visible range
+        if (d == -1){
+            d = end_time;
+            draw_to_end_time = true;
+        }
     }
 }
 
