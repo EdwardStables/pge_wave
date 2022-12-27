@@ -168,7 +168,7 @@ bool parse(VarStore &var_store){
     VCD_Meta metadata;
     int current_time;
 
-    std::ifstream inputFileStream("../../test_rtl/test_rtl.vcd");    
+    std::ifstream inputFileStream("test_rtl/test_rtl.vcd");    
     string line;
 
     bool prelude = true;
