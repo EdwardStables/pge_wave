@@ -261,9 +261,18 @@ void WavePane::draw_waves(olc::PixelGameEngine &pge){
     }
 }
 
+void WavePane::draw_cursor(olc::PixelGameEngine &pge){
+    int end_time =  get_size().x*state.time_per_px + state.start_time;
+    if (state.cursor_time < state.start_time || state.cursor_time > end_time) return;
+
+    int x = get_pos().x + ((state.cursor_time - state.start_time)/state.time_per_px );
+    pge.DrawLine({x, get_pos().y+state.timeline_width}, {x, get_pos().y+get_size().y}, state.cursor_colour);
+}
+
 void WavePane::draw(olc::PixelGameEngine &pge){
     draw_timeline(pge);
     draw_waves(pge);
+    draw_cursor(pge);
     pge.DrawRect(get_pos(), get_size());
 }
 
