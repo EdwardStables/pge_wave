@@ -40,7 +40,7 @@ void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float tim
             if (last_d < start_time){
                 new_screen_x = screen_x+float(d-start_time)/time_per_px;
             } else {
-                new_screen_x = screen_x+float(d-last_d)/time_per_px;
+                new_screen_x = pos.x + (d-start_time)/time_per_px;
             }
         }
 
