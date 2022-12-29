@@ -146,11 +146,46 @@ void State::common_inputs(){
     if (input(olc::SPACE)) picker_show = !picker_show;
 }
 
+void State::cursor_update(e_cursor_dir dir){
+    std::cout << "cursor " << dir << std::endl;
+    int wave_count = ws.get_visible_wave_count();
+    switch (dir)
+    {
+    case LEFT:
+        cursor_time--;
+        break;
+    case RIGHT:
+        cursor_time++;
+        break;
+    case UP:
+        if (cursor_visble_wave_index <= 0) 
+            //go to the last element if already 0 or -1. If no waves, sets to -1 (should stay in the same state)
+            cursor_visble_wave_index = wave_count - 1; 
+        else 
+            //just subtract 1
+            cursor_visble_wave_index--;
+        break;
+    default: //DOWN
+        if (wave_count == 0)
+            //if no waves, become -1
+            cursor_visble_wave_index = -1;
+        if (cursor_visble_wave_index == -1 || cursor_visble_wave_index == wave_count-1) 
+            //go to the first element when waves on screen and either -1 or at last element
+            cursor_visble_wave_index = 0;
+        else 
+            //just add 1
+            cursor_visble_wave_index++;
+        break;
+    }
+}
+
 void State::wave_inputs(){
     if (picker_show) return;        
 
-    if (input(olc::LEFT)) start_time = std::max(0, start_time - 50);
-    if (input(olc::RIGHT)) start_time = start_time + 50;
+    if (input(olc::LEFT)) cursor_update(LEFT);
+    if (input(olc::RIGHT)) cursor_update(RIGHT);
+    if (input(olc::UP)) cursor_update(UP);
+    if (input(olc::DOWN)) cursor_update(DOWN);
     if (input(olc::N)) name_width = std::max(0.0f, name_width - 0.05f);
     if (input(olc::M)) name_width = std::min(1.0f, name_width + 0.05f);
     if (input(olc::Z) && input(olc::SHIFT, true)) time_per_px = std::min(2048.0f, time_per_px * 2); //zoom out
@@ -188,22 +223,26 @@ NamePane::NamePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &
 
 void NamePane::draw(olc::PixelGameEngine &pge){
     pge.DrawRect(get_pos(), get_size());
+    int max_name_width = get_size().x - 8;
 
     for (int i = 0; i < ws.get_visible_wave_count(); i++){
         std::string name = ws.get_visible_wave_name(i);
         olc::vi2d size = pge.GetTextSize(name);
-        bool cut = false;
-        if (get_size().x == 0){
+        if (max_name_width <= 0){
             return;
         }
-        if (size.x > get_size().x){
-            int len = std::floor(name.size()*get_size().x/size.x) - 1;
+        if (size.x > max_name_width){
+            int len = std::floor(name.size()*max_name_width/size.x) - 1;
             name = name.substr(0, len) + ">";
-            cut = true;
         }
 
-        //10+2 are magic numbers for the timeline width + offset in wave window
-        pge.DrawString(get_pos() + olc::vi2d(0, 2+ws.get_v_offset(i) + state.timeline_width + 2), name);
+        //2 is a magic number for v offset at top of wave window
+        int y_offset = 2+ws.get_v_offset(i) + state.timeline_width + 2;
+        pge.DrawString(get_pos() + olc::vi2d(0, y_offset), name);
+
+        if (i == state.cursor_visble_wave_index){
+            pge.DrawString(get_pos() + olc::vi2d(max_name_width, y_offset), "*");
+        }
     }
 }
 

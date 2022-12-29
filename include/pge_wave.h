@@ -56,6 +56,8 @@ public:
 };
 
 struct State {
+    enum e_cursor_dir {LEFT, RIGHT, UP, DOWN};
+
     bool got_input;
     WaveStore &ws;
 
@@ -71,7 +73,8 @@ struct State {
     int picker_index = 0;
 
     //-- Wave Viewer State --//
-    int cursor_time = 100;
+    int cursor_time = 0;
+    int cursor_visble_wave_index = -1;
     olc::Pixel cursor_colour = olc::WHITE;
 
     olc::PixelGameEngine &pge;
@@ -82,6 +85,7 @@ private:
     void common_inputs();
     void wave_inputs();
     void picker_inputs();
+    void cursor_update(e_cursor_dir dir);
     bool input(olc::Key key, bool held=false);
 };
 
