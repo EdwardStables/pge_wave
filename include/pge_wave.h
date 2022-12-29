@@ -70,6 +70,10 @@ struct State {
     int picker_border = 50; //50px
     int picker_index = 0;
 
+    //-- Wave Viewer State --//
+    int cursor_time = 0;
+    olc::Pixel cursor_colour = olc::WHITE;
+
     olc::PixelGameEngine &pge;
 
     State(olc::PixelGameEngine &pge, WaveStore &ws);
@@ -109,6 +113,7 @@ public:
     WavePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &ws, State &state);
     void draw_timeline(olc::PixelGameEngine &pge);
     void draw(olc::PixelGameEngine &pge);
+    void draw_waves(olc::PixelGameEngine &pge);
     olc::vi2d get_pos();
     olc::vi2d get_size();
 };

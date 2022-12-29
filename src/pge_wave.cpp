@@ -249,11 +249,7 @@ void WavePane::draw_timeline(olc::PixelGameEngine &pge){
     }
 }
 
-void WavePane::draw(olc::PixelGameEngine &pge){
-    pge.DrawRect(get_pos(), get_size());
-    draw_timeline(pge);
-
-
+void WavePane::draw_waves(olc::PixelGameEngine &pge){
     uint32_t end_time =  std::min((float)ws.get_end_time(), get_size().x*state.time_per_px + state.start_time);
 
     for (int i = 0; i < ws.get_visible_wave_count(); i++){
@@ -263,6 +259,12 @@ void WavePane::draw(olc::PixelGameEngine &pge){
             state.time_per_px, pge
         );
     }
+}
+
+void WavePane::draw(olc::PixelGameEngine &pge){
+    draw_timeline(pge);
+    draw_waves(pge);
+    pge.DrawRect(get_pos(), get_size());
 }
 
 olc::vi2d WavePane::get_pos(){
