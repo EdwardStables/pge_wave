@@ -24,6 +24,16 @@ int Var::val_at_time(int time) const{
     return val;
 }
 
+int Var::get_prev_time(int time) const{
+    int prev = 0;
+    for (auto &v : value){
+        if (std::get<0>(v) >= time) return prev;
+        prev = std::get<0>(v);
+    }
+
+    return prev;
+}
+
 int Var::get_next_time(int time) const{
     for (auto &v : value){
         if (std::get<0>(v) > time) return std::get<0>(v);

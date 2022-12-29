@@ -21,6 +21,7 @@ struct Var{
     void add_change(int time, int next_value);
     int val_at_time(int time) const;
     int get_next_time(int time) const;
+    int get_prev_time(int time) const;
 };
 
 std::ostream& operator<< (std::ostream &out, Var const& data);

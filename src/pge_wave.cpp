@@ -127,6 +127,14 @@ int WaveStore::get_end_time(){
     return end_time;
 }
 
+Var* WaveStore::get_var_by_index(int num){
+    if (num < 0 || num >= wave_instances.size()){
+        return nullptr;
+    }
+
+    return &(varstore.get_var_by_name(wave_instances[num].wave->name));
+}
+
 State::State(olc::PixelGameEngine &pge, WaveStore &ws) : 
     pge(pge), 
     ws(ws)
@@ -147,15 +155,22 @@ void State::common_inputs(){
 }
 
 void State::cursor_update(e_cursor_dir dir){
-    std::cout << "cursor " << dir << std::endl;
     int wave_count = ws.get_visible_wave_count();
+
+    //may be a nullptr if the index is invalid
+    Var* selected_instance = ws.get_var_by_index(cursor_visble_wave_index);
+    int next_cursor_time;
+    
     switch (dir)
     {
     case LEFT:
-        cursor_time--;
+        if (selected_instance == nullptr) break;
+        cursor_time = selected_instance->get_prev_time(cursor_time);
         break;
     case RIGHT:
-        cursor_time++;
+        if (selected_instance == nullptr) break;
+        next_cursor_time = selected_instance->get_next_time(cursor_time);
+        if (next_cursor_time != -1) cursor_time = next_cursor_time;
         break;
     case UP:
         if (cursor_visble_wave_index <= 0) 
