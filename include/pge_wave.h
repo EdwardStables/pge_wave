@@ -68,7 +68,7 @@ struct State {
     int timeline_width = 10;
     float time_per_px = 1.0f; //1ns
     
-    //-- Picker specific variables --//
+    //-- Picker State --//
     bool picker_show = false;
     int picker_border = 50; //50px
     int picker_index = 0;
@@ -78,6 +78,9 @@ struct State {
     int cursor_visble_wave_index = -1;
     olc::Pixel cursor_colour = olc::WHITE;
 
+    //-- Name Panel State --//
+    bool show_values = false;
+
     olc::PixelGameEngine &pge;
 
     State(olc::PixelGameEngine &pge, WaveStore &ws);
@@ -85,6 +88,7 @@ struct State {
 private:
     void common_inputs();
     void wave_inputs();
+    void name_inputs();
     void picker_inputs();
     void cursor_update(e_cursor_dir dir);
     bool input(olc::Key key, bool held=false);
@@ -101,6 +105,8 @@ public:
 
     NamePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &ws, State &state);
     void draw(olc::PixelGameEngine &pge);
+    std::string get_value_text(int wave_index);
+    std::string get_name_text(int wave_index);
     olc::vi2d get_pos();
     olc::vi2d get_size();
 };
@@ -120,6 +126,20 @@ public:
     void draw(olc::PixelGameEngine &pge);
     void draw_waves(olc::PixelGameEngine &pge);
     void draw_cursor(olc::PixelGameEngine &pge);
+    olc::vi2d get_pos();
+    olc::vi2d get_size();
+};
+
+class ValuePane {
+private:
+    olc::vi2d pos;
+    olc::vi2d size;
+    WaveStore &ws;
+    State &state;
+
+public:
+    ValuePane(olc::vi2d pos, olc::vi2d size, WaveStore &ws, State &state);
+    void draw(olc::PixelGameEngine &pge);
     olc::vi2d get_pos();
     olc::vi2d get_size();
 };

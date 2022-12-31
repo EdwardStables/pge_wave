@@ -144,6 +144,7 @@ bool State::update(){
     got_input = false;
 
     common_inputs();
+    name_inputs();
     wave_inputs();
     picker_inputs();
 
@@ -194,6 +195,12 @@ void State::cursor_update(e_cursor_dir dir){
     }
 }
 
+void State::name_inputs(){
+    if (picker_show) return;
+
+    if (input(olc::V)) show_values = !show_values;
+}
+
 void State::wave_inputs(){
     if (picker_show) return;        
 
@@ -238,27 +245,44 @@ NamePane::NamePane(olc::vi2d pos, olc::vi2d size, float *proportion, WaveStore &
 
 void NamePane::draw(olc::PixelGameEngine &pge){
     pge.DrawRect(get_pos(), get_size());
-    int max_name_width = get_size().x - 8;
+    int max_text_width = get_size().x - 8;
+
+    if (max_text_width <= 0){
+        return;
+    }
 
     for (int i = 0; i < ws.get_visible_wave_count(); i++){
-        std::string name = ws.get_visible_wave_name(i);
-        olc::vi2d size = pge.GetTextSize(name);
-        if (max_name_width <= 0){
-            return;
-        }
-        if (size.x > max_name_width){
-            int len = std::floor(name.size()*max_name_width/size.x) - 1;
-            name = name.substr(0, len) + ">";
+        //Value to draw
+        std::string text = state.show_values ? get_value_text(i) : get_name_text(i);
+
+        //If the value is too wide, chop it down and add a '>' at the end
+        olc::vi2d size = pge.GetTextSize(text);
+        if (size.x > max_text_width){
+            int len = std::floor(text.size()*max_text_width/size.x) - 1;
+            text = text.substr(0, len) + ">";
         }
 
         //2 is a magic number for v offset at top of wave window
         int y_offset = 2+ws.get_v_offset(i) + state.timeline_width + 2;
-        pge.DrawString(get_pos() + olc::vi2d(0, y_offset), name);
+        pge.DrawString(get_pos() + olc::vi2d(0, y_offset), text);
 
+        //Draw a '*' to indicate the selected signal
         if (i == state.cursor_visble_wave_index){
-            pge.DrawString(get_pos() + olc::vi2d(max_name_width, y_offset), "*");
+            pge.DrawString(get_pos() + olc::vi2d(max_text_width, y_offset), "*");
         }
     }
+}
+
+std::string NamePane::get_value_text(int wave_index){
+    int width = ws.get_visible_wave(wave_index).wave->width;
+    int value = ws.get_var_by_index(wave_index)->val_at_time(state.cursor_time);
+
+    return "value";
+}
+
+std::string NamePane::get_name_text(int wave_index){
+    std::string name = ws.get_visible_wave_name(wave_index);
+    return name;
 }
 
 olc::vi2d NamePane::get_pos(){
@@ -336,6 +360,25 @@ olc::vi2d WavePane::get_pos(){
 
 olc::vi2d WavePane::get_size(){
     return window_size - olc::vi2d(window_size.x* *proportion, 0);
+}
+
+ValuePane::ValuePane(olc::vi2d rootpos, olc::vi2d rootsize, WaveStore &ws, State &state) :
+    state(state),
+    ws(ws),
+    pos(rootpos + state.picker_border*olc::vi2d(1,1)),
+    size(rootsize - 2*state.picker_border*olc::vi2d(1,1))
+{}
+
+void ValuePane::draw(olc::PixelGameEngine &pge){
+    pge.DrawRect(get_pos(), get_size());
+}
+
+olc::vi2d ValuePane::get_pos(){
+    return pos;
+}
+
+olc::vi2d ValuePane::get_size(){
+    return size;
 }
 
 WavePicker::WavePicker(olc::vi2d rootpos, olc::vi2d rootsize, State &state, WaveStore &ws) :
