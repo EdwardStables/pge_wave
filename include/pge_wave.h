@@ -68,6 +68,11 @@ struct State {
     int timeline_width = 10;
     float time_per_px = 1.0f; //1ns
     
+    //-- Input State --//
+    bool typing_number = false;
+    int perform_count = 0;
+    int active_count = 1;
+    
     //-- Picker State --//
     bool picker_show = false;
     int picker_border = 50; //50px
@@ -92,6 +97,7 @@ private:
     void picker_inputs();
     void cursor_update(e_cursor_dir dir);
     bool input(olc::Key key, bool held=false);
+    bool handle_number_input(olc::Key key, int value);
 };
 
 class NamePane {
