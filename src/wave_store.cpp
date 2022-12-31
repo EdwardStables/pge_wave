@@ -12,11 +12,13 @@ void Var::add_change(int time, int next_value){
     value.push_back(tup);
 }
 
-int Var::val_at_time(int time) const{
-    int val = 0;
+int Var::val_at_time(int time) const {
+    int val = std::get<0>(value[0]) == 0 ? std::get<1>(value[0]) : 0;
     for (auto &v : value){
-        if (std::get<0>(v) >= time){
+        if (std::get<0>(v) > time){
             return val;
+        } else if (std::get<0>(v) == time){
+            return std::get<1>(v);
         } else {
             val = std::get<1>(v);
         }

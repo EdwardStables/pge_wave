@@ -24,8 +24,10 @@ Wave::Wave(std::string name, int *height, VarStore &data) :
 void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float time_per_px, olc::PixelGameEngine &pge){
     bool drawing = false;
     int screen_x = pos.x;
+    int last_val = 0;
     int last_d = 0;
     bool draw_to_end_time = false;
+    bool first_entry = true;
     
     uint32_t d = start_time;
     while (true){
@@ -45,23 +47,28 @@ void Wave::draw(olc::vi2d pos, uint32_t start_time, uint32_t end_time, float tim
         }
 
         //todo can abstract this to lambdas probably
-        if (width > 1){
-            pge.DrawRect({screen_x, pos.y}, {new_screen_x-screen_x, *height}, olc::GREEN);
-            std::stringstream ss;
-            //todo for radix, this needs to change
-            ss << width << "'h"  << std::hex << val;
-            int width = pge.GetTextSize(ss.str()).x;
-            if (width < new_screen_x - screen_x){
-                pge.DrawString({screen_x + 2, pos.y + 1}, ss.str());
+        if (!first_entry){
+            if (width > 1){
+                pge.DrawRect({screen_x, pos.y}, {new_screen_x-screen_x, *height}, olc::GREEN);
+                std::stringstream ss;
+                //todo for radix, this needs to change
+                ss << width << "'h"  << std::hex << last_val;
+                int width = pge.GetTextSize(ss.str()).x;
+                if (width < new_screen_x - screen_x){
+                    pge.DrawString({screen_x + 2, pos.y + 1}, ss.str());
+                }
+                if (should_stop) break; 
+            } else {
+                pge.DrawLine({screen_x, pos.y + *height - last_val * *height}, {new_screen_x, pos.y + *height - last_val * *height}, olc::GREEN);
+                if (should_stop) break; 
+                pge.DrawLine({new_screen_x, pos.y}, {new_screen_x, pos.y+*height}, olc::GREEN);
             }
-            if (should_stop) break; 
-        } else {
-            pge.DrawLine({screen_x, pos.y + *height - val * *height}, {new_screen_x, pos.y + *height - val * *height}, olc::GREEN);
-            if (should_stop) break; 
-            pge.DrawLine({new_screen_x, pos.y}, {new_screen_x, pos.y+*height}, olc::GREEN);
         }
+
+        first_entry = false;
         screen_x = new_screen_x;
         last_d = d;
+        last_val = val;
         d = data.get_var_by_name(name).get_next_time(d);
 
         //When beyond the range of the variable, still need to draw to the end of the visible range
@@ -277,7 +284,14 @@ std::string NamePane::get_value_text(int wave_index){
     int width = ws.get_visible_wave(wave_index).wave->width;
     int value = ws.get_var_by_index(wave_index)->val_at_time(state.cursor_time);
 
-    return "value";
+    //TODO: store radix value in waveinstance and apply that here
+    if (width > 1){
+        std::stringstream ss;
+        ss << width << "'h" << std::hex << value;
+        return ss.str();
+    } else {
+        return value == 1 ? "1" : "0";
+    }
 }
 
 std::string NamePane::get_name_text(int wave_index){
