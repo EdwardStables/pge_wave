@@ -6,7 +6,13 @@ Key bindings can be customised in `include/config.h`.
 
 ## Screenshots
 
+Rendering single bit and multi-bit waveforms:
 ![Wave Dislay](images/waves.png)
+
+Toggle-able value overlay on name panel:
+![Value Dislay](images/values.png)
+
+Picker for adding additional waveforms:
 ![Wave Picker](images/wave_picker.png)
 
 ## Major Missing Features
