@@ -445,14 +445,18 @@ void WavePicker::draw(olc::PixelGameEngine &pge){
     pge.FillRect(pos, size, olc::BLACK);
     pge.DrawRect(pos, size, olc::WHITE);
 
-    olc::vi2d drawpos = pos + olc::vi2d(3,3);
+    olc::vi2d drawpos = pos + olc::vi2d(3,5);
     std::string selector = " > ";
     olc::vi2d selector_offs = {pge.GetTextSize(selector).x, 0};
     for (int i = 0; i < ws.get_raw_wave_count(); i++){
         if (i == state.picker_index) 
             pge.DrawString(drawpos, selector);
-        pge.DrawString(drawpos + selector_offs, ws.get_raw_wave(i)->name);
-        drawpos += {0, pge.GetTextSize(ws.get_raw_wave(i)->name).y};
+
+        std::stringstream ss;
+        ss << ws.get_raw_wave(i)->width << " " << ws.get_raw_wave(i)->name;
+
+        pge.DrawString(drawpos + selector_offs, ss.str());
+        drawpos += {0, pge.GetTextSize(ss.str()).y + 2};
     }
 }
 
