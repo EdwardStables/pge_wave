@@ -1,8 +1,10 @@
 # PGE Wave
 
-This is a VCD wave viewer written in C++ using the olcPixelGameEngine. This viewer is intended to address some of my UX frustrations with GTKWave, but will probably not suit many people's style of working.
+This is a VCD wave viewer written in C++ using the olcPixelGameEngine. This viewer is intended to address some of my UX frustrations with GTKWave, but will probably not suit many people's style of working. It's in active development and is missing many features. See the bottom of the README for a (non-exhaustive) list of things to be added.
 
 Key bindings can be customised in `include/config.h`.
+
+`test_rtl` contains verilog to generate vcd files and a cocotb testbench to drive it. To generate a VCD file run `make` in the `test_rtl` directory, you need cocotb and icarus installed. 
 
 ## Screenshots
 
