@@ -30,3 +30,4 @@ This tool is in active development. A subset of missing features that are critic
 - Showing Xs
 - Composite types
 - Resolution hard coded
+- Vertical scrolling for larger numbers of signals
