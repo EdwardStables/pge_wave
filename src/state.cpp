@@ -16,9 +16,35 @@ bool State::update(){
     return !got_input;
 }
 
-void State::cursor_update(e_cursor_dir dir){
+void State::select_update(e_cursor_dir dir){
     int wave_count = ws.get_visible_wave_count();
 
+    for (int i = 0; i < perform_count; i++){
+        switch (dir){
+            case UP:
+                if (cursor_visble_wave_index <= 0) 
+                    //go to the last element if already 0 or -1. If no waves, sets to -1 (should stay in the same state)
+                    cursor_visble_wave_index = wave_count - 1; 
+                else 
+                    //just subtract 1
+                    cursor_visble_wave_index--;
+                break;
+            case DOWN: //DOWN
+                if (wave_count == 0)
+                    //if no waves, become -1
+                    cursor_visble_wave_index = -1;
+                if (cursor_visble_wave_index == -1 || cursor_visble_wave_index == wave_count-1) 
+                    //go to the first element when waves on screen and either -1 or at last element
+                    cursor_visble_wave_index = 0;
+                else 
+                    //just add 1
+                    cursor_visble_wave_index++;
+                break;
+        }
+    }
+}
+
+void State::cursor_update(e_cursor_dir dir){
     //may be a nullptr if the index is invalid
     Var* selected_instance = ws.get_var_by_index(cursor_visble_wave_index);
     int next_cursor_time;
@@ -26,34 +52,15 @@ void State::cursor_update(e_cursor_dir dir){
     for (int i = 0; i < perform_count; i++)
         switch (dir)
         {
-        case LEFT:
-            if (selected_instance == nullptr) break;
-            cursor_time = selected_instance->get_prev_time(cursor_time);
-            break;
-        case RIGHT:
-            if (selected_instance == nullptr) break;
-            next_cursor_time = selected_instance->get_next_time(cursor_time);
-            if (next_cursor_time != -1) cursor_time = next_cursor_time;
-            break;
-        case UP:
-            if (cursor_visble_wave_index <= 0) 
-                //go to the last element if already 0 or -1. If no waves, sets to -1 (should stay in the same state)
-                cursor_visble_wave_index = wave_count - 1; 
-            else 
-                //just subtract 1
-                cursor_visble_wave_index--;
-            break;
-        default: //DOWN
-            if (wave_count == 0)
-                //if no waves, become -1
-                cursor_visble_wave_index = -1;
-            if (cursor_visble_wave_index == -1 || cursor_visble_wave_index == wave_count-1) 
-                //go to the first element when waves on screen and either -1 or at last element
-                cursor_visble_wave_index = 0;
-            else 
-                //just add 1
-                cursor_visble_wave_index++;
-            break;
+            case LEFT:
+                if (selected_instance == nullptr) break;
+                cursor_time = selected_instance->get_prev_time(cursor_time);
+                break;
+            case RIGHT:
+                if (selected_instance == nullptr) break;
+                next_cursor_time = selected_instance->get_next_time(cursor_time);
+                if (next_cursor_time != -1) cursor_time = next_cursor_time;
+                break;
         }
 }
 
@@ -84,8 +91,8 @@ void State::wave_inputs(){
 
     if (MOVE_LEFT) cursor_update(LEFT);
     if (MOVE_RIGHT) cursor_update(RIGHT);
-    if (MOVE_UP) cursor_update(UP);
-    if (MOVE_DOWN) cursor_update(DOWN);
+    if (MOVE_UP) select_update(UP);
+    if (MOVE_DOWN) select_update(DOWN);
     if (EXPAND_WAVE_WINDOW) name_width = std::max(0.0f, name_width - 0.05f);
     if (REDUCE_WAVE_WINDOW) name_width = std::min(1.0f, name_width + 0.05f);
     if (ZOOM_OUT) time_per_px = std::min(2048.0f, time_per_px * 2); //zoom out

@@ -45,6 +45,7 @@ private:
     void name_inputs();
     void picker_inputs();
     void cursor_update(e_cursor_dir dir);
+    void select_update(e_cursor_dir dir);
     bool input(olc::Key key, bool held=false);
     bool handle_number_input(olc::Key key, int value);
 };
