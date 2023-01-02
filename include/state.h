@@ -30,6 +30,7 @@ struct State {
     //-- Wave Viewer State --//
     int cursor_time = 0;
     int cursor_visble_wave_index = -1;
+    std::vector<int> selected_indexes = {};
     olc::Pixel cursor_colour = olc::WHITE;
 
     //-- Name Panel State --//
@@ -46,6 +47,8 @@ private:
     void picker_inputs();
     void cursor_update(e_cursor_dir dir);
     void select_update(e_cursor_dir dir);
+    void delete_selected();
+    void deselect();
     bool input(olc::Key key, bool held=false);
     bool handle_number_input(olc::Key key, int value);
 };

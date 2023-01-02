@@ -212,3 +212,11 @@ Var* WaveStore::get_var_by_index(int num){
 
     return &(varstore.get_var_by_name(wave_instances[num].wave->name));
 }
+
+void WaveStore::delete_wave_instance(int num){
+    if (num >= wave_instances.size()){
+        return;
+    }
+
+    wave_instances.erase(wave_instances.begin() + num);
+}

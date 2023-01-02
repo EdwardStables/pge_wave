@@ -42,6 +42,10 @@ void State::select_update(e_cursor_dir dir){
                 break;
         }
     }
+
+    //TODO expand to multiple values
+    selected_indexes.clear();
+    selected_indexes.push_back(cursor_visble_wave_index);
 }
 
 void State::cursor_update(e_cursor_dir dir){
@@ -62,6 +66,28 @@ void State::cursor_update(e_cursor_dir dir){
                 if (next_cursor_time != -1) cursor_time = next_cursor_time;
                 break;
         }
+}
+
+void State::delete_selected(){
+    for (auto &i : selected_indexes){
+        ws.delete_wave_instance(i);
+        if (cursor_visble_wave_index == i && i < ws.get_visible_wave_count()){
+            //index remains the same
+        }
+        else if (cursor_visble_wave_index == i){
+            //deleted the end instance and cursor was at the end
+            select_update(UP);
+        }
+    }
+
+    if (ws.get_visible_wave_count() == 0){
+        deselect();
+    }
+}
+
+void State::deselect(){
+    cursor_visble_wave_index = -1;
+    selected_indexes.clear();
 }
 
 void State::common_inputs(){
@@ -93,6 +119,7 @@ void State::wave_inputs(){
     if (MOVE_RIGHT) cursor_update(RIGHT);
     if (MOVE_UP) select_update(UP);
     if (MOVE_DOWN) select_update(DOWN);
+    if (DELETE) delete_selected();
     if (EXPAND_WAVE_WINDOW) name_width = std::max(0.0f, name_width - 0.05f);
     if (REDUCE_WAVE_WINDOW) name_width = std::min(1.0f, name_width + 0.05f);
     if (ZOOM_OUT) time_per_px = std::min(2048.0f, time_per_px * 2); //zoom out

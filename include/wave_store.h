@@ -77,6 +77,7 @@ public:
     WaveInstance get_visible_wave(int num);
     int get_v_offset(int num);
     int get_end_time();
+    void delete_wave_instance(int num);
     Var* get_var_by_index(int num);
 };
 #endif
