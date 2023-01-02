@@ -1,19 +1,6 @@
 #include "pge_wave.h"
 #include "config.h"
 
-//Test function
-std::vector<uint32_t> random_wave(int len){
-    std::vector<uint32_t> data;
-
-    for (int i = 0; i < len; i++){
-        data.push_back(rand()%1500);
-    }
-
-    std::sort(data.begin(), data.end());
-
-    return data;
-}
-
 Wave::Wave(std::string name, int *height, VarStore &data) :
     height(height),
     name(name),
